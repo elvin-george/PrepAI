@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex justify-center items-center min-h-[70vh]">
+    <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+        
+        <div class="p-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">Welcome Back</h2>
+            <p class="text-center text-gray-500 dark:text-gray-400 mb-8">Sign in to your PrepAI account</p>
+
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+                    <input type="email" name="email" id="email" required 
+                        class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-gray-900 dark:text-white">
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <input type="password" name="password" id="password" required 
+                        class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-gray-900 dark:text-white">
+                    <div class="flex justify-end mt-2">
+                        <a href="{{ url_for('auth.forgot_password') }}" class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">Forgot password?</a>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-btn" class="w-full py-3.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transform transition hover:-translate-y-0.5">
+                    Sign In
+                </button>
+                
+                <div id="error-message" class="hidden text-red-500 text-sm text-center bg-red-100 p-2 rounded"></div>
+            </form>
+        </div>
+        
+        <div class="px-8 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-100 dark:border-gray-700 text-center">
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+                Don't have an account? 
+                <a href="{{ url_for('auth.register') }}" class="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">Register here</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { auth } from "/static/js/firebase-config.js"; // Ensure this file exists!
+
+    const loginForm = document.getElementById('login-form');
+    const errorDiv = document.getElementById('error-message');
+    const submitBtn = document.getElementById('submit-btn');
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Clear previous errors and show loading state
+        errorDiv.classList.add('hidden');
+        submitBtn.innerText = "Signing In...";
+        submitBtn.disabled = true;
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            // 1. Authenticate with Firebase Client SDK
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            const idToken = await user.getIdToken();
+
+            // 2. Send the Token to Flask to set the Server Session
+            // Note: You must ensure 'auth.login' route accepts POST with JSON data
+            const response = await fetch("{{ url_for('auth.login') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ idToken: idToken })
+            });
+
+            const result = await response.json();
+
+            if (result.status === "success") {
+                // 3. Redirect based on user role
+                window.location.href = result.redirect_url;
+            } else {
+                throw new Error(result.message || "Session creation failed");
+            }
+
+        } catch (error) {
+            console.error("Login Error:", error);
+            errorDiv.innerText = error.message.replace("Firebase: ", ""); // Clean up error msg
+            errorDiv.classList.remove('hidden');
+            submitBtn.innerText = "Sign In";
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

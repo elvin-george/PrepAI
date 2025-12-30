@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+env/
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+firebase-key.json
+firebase-config.js
+
+# IDEs
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db

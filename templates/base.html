@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrepAI - Career Ecosystem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',  // Very light rose
+                            100: '#ffe4e6',
+                            500: '#f43f5e',
+                            600: '#e11d48', // Primary Rose Red
+                            700: '#be123c', // Darker Red for hover
+                            900: '#881337',
+                        },
+                        gray: {
+                            850: '#1f2937', // Custom dark bg
+                            900: '#111827',
+                        }
+                    },
+                    borderRadius: {
+                        'card': '1rem', // 16px - Restored the softer, friendly curves
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
+
+    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div class="bg-brand-50 dark:bg-brand-900/30 p-2 rounded-lg text-brand-600 dark:text-brand-500">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">
+                        Prep<span class="text-brand-600">AI</span>
+                    </span>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        <i id="theme-icon" class="fa-solid fa-moon text-gray-500 dark:text-gray-400"></i>
+                    </button>
+                    
+                    {% if session.get('user_id') %}
+                    <a href="{{ url_for('auth.logout') }}" class="text-sm font-medium text-gray-500 hover:text-brand-600 transition">
+                        Logout
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto mt-6 px-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="p-4 mb-4 text-sm font-medium rounded-xl shadow-sm flex items-center gap-3
+                        {% if category == 'error' %} bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200
+                        {% elif category == 'success' %} bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200
+                        {% else %} bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 {% endif %}" role="alert">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        const html = document.documentElement;
+        const icon = document.getElementById('theme-icon');
+
+        function toggleTheme() {
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    </script>
+</body>
+</html>
