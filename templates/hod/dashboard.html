@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 lg:p-10 space-y-8">
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Department Overview</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">
+                Welcome back, {{ user.name }}! Manage your department's structure here.
+            </p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('hod.batches') }}"
+                class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl shadow-lg shadow-brand-500/20 transition-all flex items-center">
+                <i class="fas fa-layer-group mr-2"></i> Manage Batches
+            </a>
+            <a href="{{ url_for('auth.logout') }}"
+                class="px-5 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+            class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
+            <div class="flex justify-between items-start relative z-10">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Batches</p>
+                    <h3 class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.batches }}</h3>
+                    <p class="text-xs text-brand-600 mt-2 font-medium">Active Class Groups</p>
+                </div>
+                <div
+                    class="p-3 bg-brand-50 dark:bg-brand-900/20 rounded-xl text-brand-600 dark:text-brand-400 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-layer-group text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div
+            class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
+            <div class="flex justify-between items-start relative z-10">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Staff Advisors (CSA)</p>
+                    <h3 class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.csa }}</h3>
+                    <p class="text-xs text-purple-600 mt-2 font-medium">Faculty Members</p>
+                </div>
+                <div
+                    class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-chalkboard-teacher text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div
+            class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
+            <div class="flex justify-between items-start relative z-10">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
+                    <h3 class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.students }}</h3>
+                    <p class="text-xs text-blue-600 mt-2 font-medium">Across All Semesters</p>
+                </div>
+                <div
+                    class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-user-graduate text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <div
+            class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="font-bold text-gray-900 dark:text-white">Recent Batches</h3>
+                <a href="{{ url_for('hod.batches') }}"
+                    class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">View All</a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch
+                                Name</th>
+                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Department</th>
+                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">CSA
+                                Assigned</th>
+                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Students
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% if recent_batches %}
+                        {% for batch in recent_batches %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div
+                                        class="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500">
+                                        <i class="fas fa-users text-xs"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white">{{ batch.batch_name
+                                            }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ batch.department }}</td>
+                            <td class="px-6 py-4">
+                                {% if batch.csa_id %}
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span> Active
+                                </span>
+                                {% else %}
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                                    Pending
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                {{ batch.student_count or 0 }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">
+                                <div class="mb-3"><i class="fas fa-layer-group text-4xl opacity-20"></i></div>
+                                <p class="text-sm">No batches created yet.</p>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div
+                class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <a href="{{ url_for('hod.staff') }}"
+                        class="flex items-center p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 transition-all group">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Add Staff (CSA)</p>
+                            <p class="text-xs text-gray-500">Create faculty account</p>
+                        </div>
+                        <i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-purple-500"></i>
+                    </a>
+
+                    <a href="{{ url_for('hod.reports') }}"
+                        class="flex items-center p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 transition-all group">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Department Reports</p>
+                            <p class="text-xs text-gray-500">Performance analytics</p>
+                        </div>
+                        <i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-blue-500"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div
+                class="bg-brand-50 dark:bg-brand-900/10 rounded-2xl p-6 border border-brand-100 dark:border-brand-800/30">
+                <h3 class="font-bold text-brand-900 dark:text-brand-100 mb-2">System Status</h3>
+                <div class="flex items-center text-sm text-brand-700 dark:text-brand-300 mb-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Placement Module: Active
+                </div>
+                <div class="flex items-center text-sm text-brand-700 dark:text-brand-300">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Student Portal: Active
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

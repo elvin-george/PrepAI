@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 lg:p-10 space-y-8">
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Welcome back, {{ user.name }}! Here's what's happening
+                today.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('placement.drives', new_drive=true) }}"
+                class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl shadow-lg shadow-brand-500/20 transition-all flex items-center">
+                <i class="fas fa-plus mr-2"></i> Post Drive
+            </a>
+            <a href="{{ url_for('auth.logout') }}"
+                class="px-5 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Drives</p>
+                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ drives_count }}</h3>
+                </div>
+                <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
+                    <i class="fas fa-briefcase text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
+                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ students_count }}</h3>
+                </div>
+                <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl text-emerald-600 dark:text-emerald-400">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Actions</p>
+                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ pending_actions }}</h3>
+                </div>
+                <div class="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400">
+                    <i class="fas fa-clock text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Placement Rate</p>
+                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ placement_rate }}%</h3>
+                </div>
+                <div class="p-3 bg-brand-50 dark:bg-brand-900/20 rounded-xl text-brand-600 dark:text-brand-400">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <div
+            class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="font-bold text-gray-900 dark:text-white">Recent Applications</h3>
+                <a href="{{ url_for('placement.drives') }}"
+                    class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">View All</a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Student
+                            </th>
+                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Company
+                            </th>
+                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% if recent_applications %}
+                        {% for app in recent_applications %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div
+                                        class="h-8 w-8 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-xs font-bold text-brand-700 dark:text-brand-300">
+                                        {{ app.student_name[0] }}
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ app.student_name
+                                            }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ app.company_name }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">{{ app.applied_at }}</td>
+                            <td class="px-6 py-4">
+                                <span
+                                    class="px-2.5 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                                    {{ app.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">
+                                <div class="mb-3"><i class="fas fa-inbox text-4xl opacity-20"></i></div>
+                                <p class="text-sm">No recent applications found</p>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div
+                class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h3 class="font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <a href="{{ url_for('placement.tasks') }}"
+                        class="flex items-center p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 transition-all group">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Assign Task</p>
+                            <p class="text-xs text-gray-500">Create quiz or assessment</p>
+                        </div>
+                        <i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-purple-500"></i>
+                    </a>
+
+                    <a href="{{ url_for('placement.messages') }}"
+                        class="flex items-center p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 transition-all group">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-comment-alt"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Messages</p>
+                            <p class="text-xs text-gray-500">Broadcast or chat</p>
+                        </div>
+                        <i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-indigo-500"></i>
+                    </a>
+
+                    <a href="{{ url_for('placement.students') }}"
+                        class="flex items-center p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 transition-all group">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-filter"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 dark:text-white">Student Filter</p>
+                            <p class="text-xs text-gray-500">Search by skills/CGPA</p>
+                        </div>
+                        <i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-pink-500"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

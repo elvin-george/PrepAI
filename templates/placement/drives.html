@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 lg:p-10">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="{{ url_for('placement.dashboard') }}"
+                    class="text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+                </a>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Placement Drives</h1>
+            <p class="text-gray-500 dark:text-gray-400">Manage recruitment drives and track applications.</p>
+        </div>
+        <button onclick="document.getElementById('drive-modal').classList.remove('hidden')"
+            class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg shadow-brand-500/25 transition-transform hover:-translate-y-0.5 flex items-center">
+            <i class="fas fa-plus mr-2"></i> Add New Drive
+        </button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for category, message in messages %}
+        <div
+            class="p-4 rounded-xl flex items-center {% if category == 'error' %}bg-red-50 text-red-700 border border-red-100{% else %}bg-green-50 text-green-700 border border-green-100{% endif %}">
+            <i
+                class="fas {% if category == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-3"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {% for drive in drives %}
+        <div
+            class="group bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-brand-100 dark:hover:border-brand-900/50 transition-all duration-300 flex flex-col h-full">
+            <div class="p-6 flex-1">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3
+                            class="text-xl font-bold text-gray-900 dark:text-white group-hover:text-brand-600 transition-colors">
+                            {{ drive.company_name }}</h3>
+                        <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{
+                            drive.role_title }}</p>
+                    </div>
+                    <span
+                        class="px-2.5 py-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-lg text-xs font-bold uppercase tracking-wide border border-green-100 dark:border-green-800">
+                        {{ drive.status }}
+                    </span>
+                </div>
+
+                <p class="text-gray-600 dark:text-gray-400 text-sm mb-6 line-clamp-2 min-h-[2.5rem]">
+                    {{ drive.description }}
+                </p>
+
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div
+                        class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <span class="block text-gray-400 text-xs font-medium uppercase mb-1">Package</span>
+                        <span class="font-bold text-gray-900 dark:text-white">{{ drive.package }}</span>
+                    </div>
+                    <div
+                        class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <span class="block text-gray-400 text-xs font-medium uppercase mb-1">Deadline</span>
+                        <span class="font-bold text-gray-900 dark:text-white">
+                            {{ drive.deadline.strftime('%Y-%m-%d') if drive.deadline and drive.deadline.strftime is
+                            defined else (drive.deadline or 'TBD') }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50 rounded-b-2xl">
+                <div class="text-sm text-gray-500 font-medium flex items-center">
+                    <i class="fas fa-users mr-2 text-brand-400"></i> {{ drive.applicant_count }} Applicants
+                </div>
+                <div class="flex gap-3">
+                    <button data-id="{{ drive.id }}" data-company="{{ drive.company_name }}"
+                        data-role="{{ drive.role_title }}" data-package="{{ drive.package }}"
+                        data-deadline="{{ drive.deadline.strftime('%Y-%m-%d') if drive.deadline and drive.deadline.strftime is defined else (drive.deadline or '') }}"
+                        data-description="{{ drive.description }}"
+                        data-min-cgpa="{{ drive.eligibility_criteria.min_cgpa }}"
+                        data-max-backlogs="{{ drive.eligibility_criteria.max_backlogs }}" onclick="openEditModal(this)"
+                        class="text-gray-500 hover:text-brand-600 transition-colors" title="Edit Drive">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="viewApplicants('{{ drive.id }}')"
+                        class="text-brand-600 hover:text-brand-800 dark:text-brand-400 font-semibold text-sm transition-colors">
+                        View List <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div
+            class="col-span-full flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+            <div
+                class="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                <i class="fas fa-folder-open text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">No Drives Found</h3>
+            <p class="text-gray-500 dark:text-gray-400 max-w-sm mt-1">Get started by posting a new placement drive for
+                your students.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div id="drive-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+    aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" aria-hidden="true"
+            onclick="closeModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div
+            class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100 dark:border-gray-700">
+            <div
+                class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800">
+                <h3 id="modal-title-text" class="text-lg font-bold text-gray-900 dark:text-white">Post New Drive</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="drive-form" action="{{ url_for('placement.drives') }}" method="POST" class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Company
+                            Name</label>
+                        <input type="text" name="company_name" id="field_company" required
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Role
+                            Title</label>
+                        <input type="text" name="position" id="field_role" required
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Package
+                            (LPA)</label>
+                        <input type="text" name="package" id="field_package" placeholder="e.g. 12 LPA" required
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Deadline</label>
+                        <input type="date" name="deadline" id="field_deadline" required
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <div
+                    class="bg-brand-50/50 dark:bg-gray-700/30 p-4 rounded-xl border border-brand-100 dark:border-gray-600">
+                    <h4 class="text-sm font-bold text-brand-800 dark:text-brand-300 mb-3 flex items-center"><i
+                            class="fas fa-filter mr-2"></i>Eligibility Criteria</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Min
+                                CGPA</label>
+                            <input type="number" step="0.1" name="min_cgpa" id="field_cgpa"
+                                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Max
+                                Backlogs</label>
+                            <input type="number" name="max_backlogs" id="field_backlogs"
+                                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label
+                            class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Departments</label>
+                        <select name="departments" multiple
+                            class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm h-20">
+                            <option value="MCA">MCA</option>
+                            <option value="CSE">CSE</option>
+                            <option value="ME">Mechanical</option>
+                            <option value="CE">Civil</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Job
+                        Description</label>
+                    <textarea name="description" id="field_desc" rows="3"
+                        class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal()"
+                        class="px-6 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 font-medium transition-colors">Cancel</button>
+                    <button type="submit" id="submit_btn"
+                        class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-medium transition-colors">Post
+                        Drive</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('new_drive') === 'true') {
+            document.getElementById('drive-modal').classList.remove('hidden');
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+        }
+    });
+
+    function closeModal() {
+        document.getElementById('drive-modal').classList.add('hidden');
+        // Reset form to "Post" state
+        document.getElementById('drive-form').action = "{{ url_for('placement.drives') }}";
+        document.getElementById('drive-form').reset();
+        document.getElementById('modal-title-text').innerText = "Post New Drive";
+        document.getElementById('submit_btn').innerText = "Post Drive";
+    }
+
+    function openEditModal(btn) {
+        const modal = document.getElementById('drive-modal');
+        const form = document.getElementById('drive-form');
+
+        // Extract data
+        const id = btn.dataset.id;
+        const company = btn.dataset.company;
+        const role = btn.dataset.role;
+        const pkg = btn.dataset.package;
+        const deadline = btn.dataset.deadline;
+        const desc = btn.dataset.description;
+        const cgpa = btn.dataset.minCgpa;
+        const backlogs = btn.dataset.maxBacklogs;
+
+        // Populate fields
+        document.getElementById('field_company').value = company;
+        document.getElementById('field_role').value = role;
+        document.getElementById('field_package').value = pkg;
+        document.getElementById('field_desc').value = desc;
+        document.getElementById('field_cgpa').value = cgpa;
+        document.getElementById('field_backlogs').value = backlogs;
+
+        // Handle Date (ensure YYYY-MM-DD)
+        if (deadline && deadline !== 'None' && deadline !== '') {
+            try {
+                // Should already be formatted or YYYY-MM-DD string
+                document.getElementById('field_deadline').value = deadline.split(' ')[0];
+            } catch (e) { console.log("Date parse error", e); }
+        }
+
+        // Update UI for Edit Mode
+        document.getElementById('modal-title-text').innerText = "Edit Drive";
+        document.getElementById('submit_btn').innerText = "Update Drive";
+        form.action = `/placement/drives/edit/${id}`;
+
+        modal.classList.remove('hidden');
+    }
+
+    function viewApplicants(driveId) {
+        window.location.href = `/placement/drives/${driveId}`;
+    }
+</script>
+{% endblock %}

@@ -2,45 +2,74 @@
 
 {% block content %}
 <div class="flex justify-center items-center min-h-[70vh]">
-    <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
-        
+    <div
+        class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+
         <div class="p-8">
             <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">Welcome Back</h2>
             <p class="text-center text-gray-500 dark:text-gray-400 mb-8">Sign in to your PrepAI account</p>
 
             <form id="login-form" class="space-y-6">
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
-                    <input type="email" name="email" id="email" required 
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email
+                        Address</label>
+                    <input type="email" name="email" id="email" required
                         class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-gray-900 dark:text-white">
                 </div>
 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-                    <input type="password" name="password" id="password" required 
-                        class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-gray-900 dark:text-white">
+                    <label for="password"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" name="password" id="password" required
+                            class="w-full pl-4 pr-10 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-gray-900 dark:text-white">
+                        <button type="button" onclick="togglePasswordVisibility('password', this)"
+                            class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                     <div class="flex justify-end mt-2">
-                        <a href="{{ url_for('auth.forgot_password') }}" class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">Forgot password?</a>
+                        <a href="{{ url_for('auth.forgot_password') }}"
+                            class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">Forgot
+                            password?</a>
                     </div>
                 </div>
 
-                <button type="submit" id="submit-btn" class="w-full py-3.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transform transition hover:-translate-y-0.5">
+                <button type="submit" id="submit-btn"
+                    class="w-full py-3.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transform transition hover:-translate-y-0.5">
                     Sign In
                 </button>
-                
+
                 <div id="error-message" class="hidden text-red-500 text-sm text-center bg-red-100 p-2 rounded"></div>
             </form>
         </div>
-        
+
         <div class="px-8 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-100 dark:border-gray-700 text-center">
             <p class="text-sm text-gray-600 dark:text-gray-300">
-                Don't have an account? 
-                <a href="{{ url_for('auth.register') }}" class="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">Register here</a>
+                Don't have an account?
+                <a href="{{ url_for('auth.register') }}"
+                    class="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">Register here</a>
             </p>
         </div>
     </div>
 </div>
 
+<script>
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+</script>
 <script type="module">
     import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { auth } from "/static/js/firebase-config.js"; // Ensure this file exists!
@@ -51,7 +80,7 @@
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         // Clear previous errors and show loading state
         errorDiv.classList.add('hidden');
         submitBtn.innerText = "Signing In...";

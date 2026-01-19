@@ -3,12 +3,19 @@
 {% block content %}
 <div class="flex justify-center items-center min-h-[80vh]">
     <div class="w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
-        
+
         <div class="p-8">
             <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">Join PrepAI</h2>
             <p class="text-center text-gray-500 dark:text-gray-400 mb-8">Start your journey today</p>
+            
+            {% if error %}
+            <div class="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ error }}
+            </div>
+            {% endif %}
 
             <form action="{{ url_for('auth.register') }}" method="POST" class="space-y-5">
+                
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
                     <input type="text" name="name" required 
@@ -24,10 +31,10 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">I am a...</label>
                     <div class="relative">
-                        <select name="role" required class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition text-gray-900 dark:text-white appearance-none">
+                        <select name="role" id="role-select" required onchange="toggleBatchField()"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition text-gray-900 dark:text-white appearance-none">
                             <option value="" disabled selected>Select your role</option>
                             <option value="student">Student</option>
-                            <option value="csa">CSA / Staff Advisor</option>
                             <option value="placement_officer">Placement Officer</option>
                             <option value="hod">Head of Department (HOD)</option>
                         </select>
@@ -35,15 +42,44 @@
                             <i class="fa-solid fa-chevron-down text-xs"></i>
                         </div>
                     </div>
+                    <p class="text-xs text-gray-500 mt-1 ml-1">* Staff Advisors (CSA) must be added by the HOD.</p>
+                </div>
+
+                <div id="batch-field" class="hidden transition-all duration-300">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Batch</label>
+                    <div class="relative">
+                        <select name="batch_id" id="batch-select"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition text-gray-900 dark:text-white appearance-none">
+                            <option value="" disabled selected>Select your class</option>
+                            {% if batches %}
+                                {% for batch in batches %}
+                                <option value="{{ batch.id }}">{{ batch.name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="" disabled>No batches available (Contact HOD)</option>
+                            {% endif %}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1 ml-1">Cannot find your batch? Ask your HOD to create it.</p>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-                    <input type="password" name="password" required minlength="6"
-                        class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition text-gray-900 dark:text-white">
+                    <div class="relative">
+                        <input type="password" name="password" id="reg_password" required minlength="6" 
+                            class="w-full pl-4 pr-10 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition text-gray-900 dark:text-white">
+                        <button type="button" onclick="togglePasswordVisibility('reg_password', this)" 
+                            class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <button type="submit" class="w-full py-3.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transform transition hover:-translate-y-0.5">
+                <button type="submit" 
+                    class="w-full py-3.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transform transition hover:-translate-y-0.5">
                     Create Account
                 </button>
             </form>
@@ -57,4 +93,36 @@
         </div>
     </div>
 </div>
+
+<script>
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function toggleBatchField() {
+        const role = document.getElementById('role-select').value;
+        const batchField = document.getElementById('batch-field');
+        const batchSelect = document.getElementById('batch-select');
+
+        if (role === 'student') {
+            batchField.classList.remove('hidden');
+            batchSelect.required = true;
+        } else {
+            batchField.classList.add('hidden');
+            batchSelect.required = false;
+            batchSelect.value = ""; // Clear selection if user switches role
+        }
+    }
+</script>
 {% endblock %}
