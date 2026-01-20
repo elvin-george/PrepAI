@@ -33,3 +33,6 @@ Database & Auth: Firebase (Firestore, Authentication)
 AI Engine: Google Gemini API (1.5 Flash/Pro)
 
 Deployment: (Currently Localhost)
+
+Project Submitted by Elvin Manoj George (elvinmjgeorge@gmail.com)
+Guide: Er. Anoopa Raveendran
