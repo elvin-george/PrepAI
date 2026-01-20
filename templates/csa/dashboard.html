@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 lg:p-10 space-y-8">
+    
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Staff Dashboard</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">
+                Overview of your assigned classes and student progress.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">My Batches</p>
+                    <h3 class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.batch_count }}</h3>
+                </div>
+                <div class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-purple-600 dark:text-purple-400">
+                    <i class="fas fa-chalkboard text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
+                    <h3 class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.total_students }}</h3>
+                </div>
+                <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
+                    <i class="fas fa-user-graduate text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Risk Alerts</p>
+                    <h3 class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.alerts }}</h3>
+                    <p class="text-xs text-red-500 mt-1 font-medium">Inactive > 7 Days</p>
+                </div>
+                <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-xl text-red-600 dark:text-red-400">
+                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+            <h3 class="font-bold text-gray-900 dark:text-white">Assigned Classes</h3>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+            {% for batch in batches %}
+            <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-md transition-shadow group">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h4 class="font-bold text-lg text-gray-900 dark:text-white">{{ batch.batch_name }}</h4>
+                        <p class="text-sm text-gray-500">{{ batch.department }} | {{ batch.current_semester }}</p>
+                    </div>
+                    <div class="h-10 w-10 rounded-full bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold">
+                        {{ batch.student_count }}
+                    </div>
+                </div>
+                <a href="{{ url_for('csa.view_batch', batch_id=batch.id) }}" class="block w-full py-2 text-center bg-gray-50 dark:bg-gray-700 hover:bg-brand-600 hover:text-white text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm font-bold">
+                    Manage Class <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            {% else %}
+            <div class="col-span-full text-center py-10 text-gray-500">
+                <i class="fas fa-folder-open text-4xl mb-3 opacity-30"></i>
+                <p>No batches assigned to you yet.</p>
+                <p class="text-sm mt-1">Contact your HOD to be assigned to a class.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

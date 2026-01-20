@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 lg:p-10 space-y-8">
+    
+    <div>
+        <a href="{{ url_for('csa.dashboard') }}" class="text-sm text-gray-500 hover:text-brand-600 mb-2 inline-block">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+        </a>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ batch.batch_name }}</h1>
+                <p class="text-gray-500">{{ batch.department }} • {{ batch.current_semester }}</p>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('task-modal').classList.remove('hidden')" 
+                   class="px-4 py-2 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-medium shadow-lg shadow-brand-500/30 flex items-center">
+                    <i class="fas fa-plus mr-2"></i> Create Task
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="font-bold text-gray-900 dark:text-white">Student Roster</h3>
+            <div class="flex gap-2">
+                <span class="text-xs font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
+                    Total: {{ students|length }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                    <tr>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Name</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Activity Status</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">CGPA</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for student in students %}
+                    <tr class="group hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold mr-3 text-xs">
+                                    {{ student.full_name[0] }}
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-900 dark:text-white text-sm">{{ student.full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ student.email }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if student.is_lazy %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5 animate-pulse"></span> Inactive
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                                    Active
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                            {{ student.cgpa or 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <a href="#" class="text-gray-400 hover:text-brand-600 transition-colors" title="View Profile">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                            No students found in this batch.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="task-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg p-6 shadow-xl">
+        <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Create New Task</h3>
+        <p class="text-gray-500 mb-4">Task creation form will go here.</p>
+        <button onclick="document.getElementById('task-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-200 rounded-lg">Close</button>
+    </div>
+</div>
+{% endblock %}

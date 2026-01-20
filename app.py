@@ -3,6 +3,14 @@ import firebase_admin
 from firebase_admin import credentials
 from dotenv import load_dotenv
 import os
+from flask_apscheduler import APScheduler 
+
+# Import the background task logic
+try:
+    from tasks import send_lazy_alerts_job 
+except ImportError:
+    print("Warning: tasks.py not found. Automated alerts will not run.")
+    send_lazy_alerts_job = None
 
 # 1. Load Environment Variables
 load_dotenv()
@@ -12,7 +20,21 @@ app = Flask(__name__)
 # 2. Configuration
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret_key_123") 
 app.config['SESSION_TYPE'] = 'filesystem' 
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600 # Session expires in 1 hour
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600 
+
+# --- CRITICAL FIX: Set Debug explicitly here ---
+# This ensures the scheduler check below works correctly
+app.debug = True 
+
+# --- SCHEDULER CONFIGURATION ---
+app.config['JOBS'] = [
+    {
+        'id': 'lazy_alert_job',
+        'func': lambda: send_lazy_alerts_job(app) if send_lazy_alerts_job else None,
+        'trigger': 'interval',
+        'seconds': 60 
+    }
+]
 
 # 3. Firebase Initialization
 if not firebase_admin._apps:
@@ -23,31 +45,36 @@ if not firebase_admin._apps:
     except Exception as e:
         print(f"Firebase Init Error: {e}")
 
-# 4. GLOBAL SESSION GUARD (Security Enforcement)
-# This runs before every single request to ensure security
+# 4. Initialize & Start Scheduler (FIXED LOGIC)
+scheduler = APScheduler()
+scheduler.init_app(app)
+
+# LOGIC EXPLANATION:
+# 1. not app.debug -> Returns False (because we set app.debug=True above)
+# 2. WERKZEUG_RUN_MAIN -> Returns False in Main Process, True in Child Process
+# Result: Scheduler ONLY starts in the Child process.
+if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+    scheduler.start()
+    print("⏰ Background Scheduler Started (Single Instance)...")
+
+# 5. GLOBAL SESSION GUARD
 @app.before_request
 def require_login():
-    # 1. Define routes that are allowed WITHOUT login (Public Access)
-    # 'static' allows CSS/JS to load. 'auth.*' allows login/register pages.
     allowed_routes = [
         'auth.login', 
         'auth.register', 
         'auth.forgot_password', 
-        'auth.google_login', # If you add Google Auth later
         'static'
     ]
 
-    # 2. Check if the requested endpoint is protected
-    # If the endpoint is NOT in the allowed list...
     if request.endpoint and request.endpoint not in allowed_routes:
-        # 3. Check if user is logged in
         if 'user' not in session:
-            # User is NOT logged in -> Force redirect to Login
-            print(f"Unauthorized access attempt to {request.endpoint}. Redirecting to Login.")
-            return redirect(url_for('auth.login'))
+            # Avoid redirect loop for API endpoints
+            if request.endpoint and 'api' not in request.endpoint:
+                print(f"Unauthorized access to {request.endpoint}. Redirecting.")
+                return redirect(url_for('auth.login'))
 
-# 5. Register Blueprints
-# Ensure your blueprint files are created in the 'routes' folder
+# 6. Register Blueprints
 try:
     from routes.auth_routes import auth_bp
     from routes.student_routes import student_bp
@@ -61,27 +88,26 @@ try:
     app.register_blueprint(hod_bp, url_prefix='/hod')
     app.register_blueprint(placement_bp, url_prefix='/placement')
 except ImportError as e:
-    print(f"Warning: Blueprints not fully implemented yet. Error: {e}")
+    print(f"Warning: Blueprints not fully implemented. Error: {e}")
 
-# 6. Base Routes
+# 7. Base Routes
 @app.route('/')
 def index():
     if 'user' in session:
-        role = session.get('user', {}).get('role', 'student') # Safe get
+        role = session.get('user', {}).get('role', 'student')
         
         if role == 'student':
             return redirect(url_for('student.dashboard'))
         elif role == 'csa':
             return redirect(url_for('csa.dashboard'))
-        elif role == 'placement':
+        elif role == 'placement' or role == 'placement_officer':
             return redirect(url_for('placement.dashboard'))
-        elif role == 'hod':  # <--- Add this check
+        elif role == 'hod':
             return redirect(url_for('hod.dashboard'))
             
     return redirect(url_for('auth.login'))
 
-# 7. Prevent Browser Caching (Security)
-# Ensures that clicking "Back" after logout doesn't show the previous page
+# 8. Prevent Browser Caching
 @app.after_request
 def add_header(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -90,4 +116,5 @@ def add_header(response):
     return response
 
 if __name__ == '__main__':
+    # debug=True is redundant here since we set it above, but safe to keep
     app.run(debug=True, port=4999)
