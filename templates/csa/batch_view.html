@@ -14,9 +14,14 @@
             </div>
             
             <div class="flex gap-3">
+                <a href="{{ url_for('csa.task_manager') }}" 
+                   class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl font-medium transition-colors flex items-center">
+                    <i class="fas fa-list-check mr-2"></i> All Tasks
+                </a>
+
                 <button onclick="document.getElementById('task-modal').classList.remove('hidden')" 
-                   class="px-4 py-2 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-medium shadow-lg shadow-brand-500/30 flex items-center">
-                    <i class="fas fa-plus mr-2"></i> Create Task
+                   class="px-4 py-2 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-medium shadow-lg shadow-brand-500/30 flex items-center transition-all">
+                    <i class="fas fa-plus mr-2"></i> Assign Task
                 </button>
             </div>
         </div>
@@ -25,11 +30,9 @@
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
             <h3 class="font-bold text-gray-900 dark:text-white">Student Roster</h3>
-            <div class="flex gap-2">
-                <span class="text-xs font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
-                    Total: {{ students|length }}
-                </span>
-            </div>
+            <span class="text-xs font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
+                Total: {{ students|length }}
+            </span>
         </div>
         
         <div class="overflow-x-auto">
@@ -71,9 +74,9 @@
                             {{ student.cgpa or 'N/A' }}
                         </td>
                         <td class="px-6 py-4">
-                            <a href="#" class="text-gray-400 hover:text-brand-600 transition-colors" title="View Profile">
+                            <button class="text-gray-400 hover:text-brand-600 transition-colors" title="View Profile">
                                 <i class="fas fa-eye"></i>
-                            </a>
+                            </button>
                         </td>
                     </tr>
                     {% else %}
@@ -89,11 +92,43 @@
     </div>
 </div>
 
-<div id="task-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg p-6 shadow-xl">
-        <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Create New Task</h3>
-        <p class="text-gray-500 mb-4">Task creation form will go here.</p>
-        <button onclick="document.getElementById('task-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-200 rounded-lg">Close</button>
+<div id="task-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl transform transition-all">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Assign to {{ batch.batch_name }}</h3>
+            <button onclick="document.getElementById('task-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form action="{{ url_for('csa.create_task') }}" method="POST" class="space-y-4">
+            <input type="hidden" name="batch_id" value="{{ batch.id }}">
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                <input type="text" name="title" required placeholder="e.g., Submit Internship Report"
+                    class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea name="description" rows="3" required placeholder="Instructions for students..."
+                    class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deadline</label>
+                <input type="date" name="deadline" required
+                    class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 outline-none">
+            </div>
+
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('task-modal').classList.add('hidden')" 
+                    class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50">Cancel</button>
+                <button type="submit" 
+                    class="px-5 py-2.5 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 shadow-lg shadow-brand-500/30">Assign Now</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

@@ -128,7 +128,7 @@ def send_lazy_alerts_job(app):
                     if hasattr(last_active, 'replace'):
                         if last_active.replace(tzinfo=None) < threshold: is_inactive = True
                     elif isinstance(last_active, str):
-                        pass # Handle string parsing if needed
+                        pass 
                 except: pass
             
             if is_inactive:
@@ -181,7 +181,7 @@ def send_lazy_alerts_job(app):
         # --- 4. SEND EMAIL ---
         if not inactive_list and not missed_tasks_report:
             print("✅ Everyone is active and up to date. No email needed.")
-            status_ref.set({'last_run_at': datetime.now()})
+            status_ref.set({'last_run_at': datetime.now(), 'latest_message': 'No issues detected today.'})
             return
 
         staff_emails = []
@@ -221,7 +221,16 @@ def send_lazy_alerts_job(app):
                 server.quit()
                 
                 print(f"📧 EMAIL SENT SUCCESSFULY to {len(staff_emails)} staff with 2 attachments.")
-                status_ref.set({'last_run_at': datetime.now()})
+                
+                # --- NEW: SAVE STRING MESSAGE (QUOTA FRIENDLY) ---
+                # We save the text in the SAME document we use for tracking time.
+                # No new document created.
+                status_ref.set({
+                    'last_run_at': datetime.now(),
+                    'latest_message': f"Alert: {len(inactive_list)} inactive students & {len(missed_tasks_report)} missed tasks.",
+                    'message_date': datetime.now() # To check if it's fresh
+                })
+                # ------------------------------------------------------
                 
             except Exception as e:
                 print(f"❌ Email Failed: {e}")
