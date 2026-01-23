@@ -90,9 +90,9 @@
                 <h3 class="font-bold text-lg mb-2">AI Career Tools</h3>
                 <p class="text-brand-100 text-sm mb-4">Prepare for your dream job with Gemini-powered tools.</p>
                 <div class="space-y-2">
-                    <button disabled class="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium text-left px-4 flex items-center gap-2 opacity-70">
-                        <i class="fas fa-robot"></i> Mock Interview <span class="text-[10px] bg-white/20 px-1.5 rounded ml-auto">Coming Soon</span>
-                    </button>
+                    <a href="{{ url_for('interview.setup_interview') }}" class="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium text-left px-4 flex items-center gap-2">
+    <i class="fas fa-robot"></i> Mock Interview
+</a>
                     <button disabled class="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium text-left px-4 flex items-center gap-2 opacity-70">
                         <i class="fas fa-file-alt"></i> Resume Analyzer <span class="text-[10px] bg-white/20 px-1.5 rounded ml-auto">Coming Soon</span>
                     </button>

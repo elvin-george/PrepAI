@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from firebase_admin import firestore
 from datetime import datetime
+from utils.ai_helper import get_rag_response
+from flask import jsonify
 
 student_bp = Blueprint('student', __name__)
 db = firestore.client()
@@ -29,7 +31,6 @@ def dashboard():
         tasks_ref = db.collection('assignments')\
             .where('assigned_to_batch', '==', batch_id)\
             .where('status', '==', 'active')\
-            .order_by('deadline')\
             .stream()
             
         for t in tasks_ref:
@@ -39,6 +40,9 @@ def dashboard():
             sub_ref = db.collection('assignments').document(t.id).collection('submissions').document(user_id).get()
             t_data['is_submitted'] = sub_ref.exists
             active_tasks.append(t_data)
+        
+        # Sort by deadline manually
+        active_tasks.sort(key=lambda x: x.get('deadline'))
 
     # 3. Fetch Recent Notifications (Global or Role specific)
     # For simplicity, we just fetch the latest system alert if strictly needed, 
@@ -110,3 +114,26 @@ def submit_task(task_id):
         flash(f"Error submitting task: {e}", "error")
         
     return redirect(url_for('student.dashboard'))
+
+# --- 4. CHAT INTERFACE PAGE ---
+@student_bp.route('/chat')
+def chat_interface():
+    if not check_student_role(): return redirect(url_for('auth.login'))
+    user_data = session.get('user', {})
+    return render_template('student/chat.html', user=user_data)
+
+# --- 5. API TO HANDLE MESSAGES ---
+@student_bp.route('/api/chat', methods=['POST'])
+def chat_api():
+    if not check_student_role(): return jsonify({"error": "Unauthorized"}), 403
+    
+    data = request.json
+    user_message = data.get('message', '')
+    
+    if not user_message:
+        return jsonify({"response": "Please say something!"})
+
+    # Call our RAG Helper
+    ai_reply = get_rag_response(user_message)
+    
+    return jsonify({"response": ai_reply})

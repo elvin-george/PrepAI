@@ -81,13 +81,17 @@ try:
     from routes.csa_routes import csa_bp
     from routes.hod_routes import hod_bp
     from routes.placement_routes import placement_bp
+    from routes.interview_routes import interview_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(student_bp, url_prefix='/student')
     app.register_blueprint(csa_bp, url_prefix='/csa')
     app.register_blueprint(hod_bp, url_prefix='/hod')
     app.register_blueprint(placement_bp, url_prefix='/placement')
-except ImportError as e:
+    app.register_blueprint(interview_bp, url_prefix='/interview')
+except Exception as e:
+    import traceback
+    traceback.print_exc()
     print(f"Warning: Blueprints not fully implemented. Error: {e}")
 
 # 7. Base Routes

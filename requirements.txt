@@ -1,0 +1,11 @@
+flask
+firebase-admin
+python-dotenv
+flask-apscheduler
+reportlab
+requests
+langchain
+langchain-google-genai
+langchain-huggingface
+langchain-community
+faiss-cpu
