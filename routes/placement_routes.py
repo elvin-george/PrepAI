@@ -354,9 +354,121 @@ def tasks():
         flash('Task assigned!', 'success')
         return redirect(url_for('placement.tasks'))
 
-    tasks_ref = db.collection('assignments').order_by('created_at', direction=firestore.Query.DESCENDING).stream()
-    tasks_list = [{'id': t.id, **t.to_dict()} for t in tasks_ref]
-    return render_template('placement/tasks.html', user=session['user'], tasks=tasks_list)
+        flash('Task assigned!', 'success')
+        return redirect(url_for('placement.tasks'))
+
+    # Strict Filtering: Only show tasks created by ME
+    # Note: 'assigned_by' field stores the creator UID for Placement tasks
+    uid = session['user']['uid']
+    tasks_list = []
+    
+    try:
+        # 1. Optimized Query
+        tasks_ref = db.collection('assignments')\
+            .where('assigned_by', '==', uid)\
+            .order_by('created_at', direction=firestore.Query.DESCENDING).stream()
+        tasks_list = [{'id': t.id, **t.to_dict()} for t in tasks_ref]
+        
+    except Exception:
+        # 2. Fallback Query (No Index)
+        print("Placement Tasks Fallback: Sorting in memory")
+        tasks_ref = db.collection('assignments').where('assigned_by', '==', uid).stream()
+        tasks_list = [{'id': t.id, **t.to_dict()} for t in tasks_ref]
+        tasks_list.sort(key=lambda x: x.get('created_at', datetime.min) if x.get('created_at') else datetime.min, reverse=True)
+
+    # Fetch All Batches for Dropdown
+    batches = []
+    for b in db.collection('batches').stream():
+        batches.append({'id': b.id, **b.to_dict()})
+
+    return render_template('placement/tasks.html', user=session['user'], tasks=tasks_list, batches=batches)
+
+@placement_bp.route('/tasks/edit/<task_id>', methods=['POST'])
+def edit_task(task_id):
+    if not check_placement_role(): return redirect(url_for('auth.login'))
+    try:
+        task_ref = db.collection('assignments').document(task_id)
+        task = task_ref.get()
+        
+        if not task.exists:
+            flash("Task not found.", "error")
+            return redirect(url_for('placement.tasks'))
+            
+        task_data = task.to_dict()
+        
+        # Verify Ownership: PO can only edit their OWN tasks
+        # Note: We check both 'assigned_by' (new tasks) and 'created_by' (reposts/others) to be safe
+        creator = task_data.get('assigned_by') or task_data.get('created_by')
+        if creator != session['user']['uid']:
+            flash("You can only edit tasks you created.", "error")
+            return redirect(url_for('placement.tasks'))
+
+        update_data = {
+            'title': request.form['title'],
+            'description': request.form['description'],
+            'deadline': request.form['deadline'],
+            'assigned_to_batch': request.form['batch_id']
+        }
+        
+        task_ref.update(update_data)
+        flash("Task updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating task: {e}", "error")
+    return redirect(url_for('placement.tasks'))
+
+@placement_bp.route('/tasks/submissions/<task_id>')
+def view_submissions(task_id):
+    if not check_placement_role(): return redirect(url_for('auth.login'))
+    
+    try:
+        task_ref = db.collection('assignments').document(task_id).get()
+        if not task_ref.exists:
+            flash("Task not found", "error")
+            return redirect(url_for('placement.tasks'))
+            
+        task_data = task_ref.to_dict()
+        batch_id = task_data.get('assigned_to_batch')
+        
+        # Verify Ownership
+        if task_data.get('assigned_by') != session['user']['uid']:
+             flash("Unauthorized access to this task.", "error")
+             return redirect(url_for('placement.tasks'))
+
+        # Fetch Students in Batch
+        students_ref = db.collection('users').where('batch_id', '==', batch_id).where('role', '==', 'student').stream()
+        students_data = []
+        
+        for s in students_ref:
+            s_dict = s.to_dict()
+            student_id = s.id
+            
+            # Check Submission Status
+            submission_ref = db.collection('assignments').document(task_id).collection('submissions').document(student_id).get()
+            
+            status = 'pending'
+            file_url = '#'
+            submitted_at = None
+            
+            if submission_ref.exists:
+                sub_data = submission_ref.to_dict()
+                status = 'submitted'
+                file_url = sub_data.get('file_url') or sub_data.get('link') or '#'
+                submitted_at = sub_data.get('submitted_at')
+
+            students_data.append({
+                'name': s_dict.get('full_name', 'Unknown'),
+                'email': s_dict.get('email', 'N/A'),
+                'status': status,
+                'file_url': file_url,
+                'submitted_at': submitted_at
+            })
+            
+        return render_template('placement/task_submissions.html', user=session['user'], task=task_data, students=students_data)
+
+    except Exception as e:
+        print(f"Error viewing submissions: {e}")
+        flash("An error occurred loading submissions.", "error")
+        return redirect(url_for('placement.tasks'))
 
 # --- 5. MESSAGES (Universal) ---
 @placement_bp.route('/messages')

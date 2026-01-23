@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 lg:p-10 space-y-8">
+    <div class="flex items-center gap-4">
+        <a href="{{ url_for('placement.tasks') }}"
+            class="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 text-gray-500 hover:text-brand-600 shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Submissions</h1>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">Task: {{ task.title }}</p>
+        </div>
+    </div>
+
+    <div
+        class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr
+                        class="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 text-xs uppercase text-gray-500 font-bold tracking-wider">
+                        <th class="p-5">Student Name</th>
+                        <th class="p-5">Status</th>
+                        <th class="p-5">Submission Date</th>
+                        <th class="p-5 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for student in students %}
+                    <tr class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="p-5">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold text-xs">
+                                    {{ student.name[0] }}
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-sm text-gray-900 dark:text-white">{{ student.name }}
+                                    </p>
+                                    <p class="text-xs text-gray-500">{{ student.email }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-5">
+                            {% if student.status == 'submitted' %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span> Submitted
+                            </span>
+                            {% else %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span> Pending
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="p-5 text-sm text-gray-500">
+                            {% if student.submitted_at %}
+                            {{ student.submitted_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="p-5 text-right">
+                            {% if student.status == 'submitted' %}
+                            <a href="{{ student.file_url }}" target="_blank"
+                                class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold transition-colors">
+                                View File <i class="fas fa-external-link-alt ml-1"></i>
+                            </a>
+                            {% else %}
+                            <span class="text-xs text-gray-400 italic">No file</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if not students %}
+        <div class="p-12 text-center">
+            <p class="text-gray-500">No students found in this batch.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

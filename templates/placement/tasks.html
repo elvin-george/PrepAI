@@ -1,95 +1,207 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="p-6 lg:p-10">
-    <div class="mb-4">
-        <a href="{{ url_for('placement.dashboard') }}"
-            class="text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors">
-            <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
-        </a>
-    </div>
-    <div class="flex flex-col md:flex-row gap-8">
+<div class="p-6 lg:p-10 space-y-8">
 
-        <div class="w-full md:w-1/3">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Task Management</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Create and manage placement assignments for batches.</p>
+        </div>
+        <button onclick="document.getElementById('createTaskModal').classList.remove('hidden')"
+            class="px-5 py-2.5 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-medium shadow-lg shadow-brand-500/30 flex items-center transition-all">
+            <i class="fas fa-plus mr-2"></i> Create Assignment
+        </button>
+    </div>
+
+    <!-- Active Assignments Grid -->
+    <div class="space-y-6">
+        <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200">Active Assignments</h3>
+
+        {% if tasks %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for task in tasks %}
             <div
-                class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sticky top-24">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Assign New Task</h2>
-                <form action="{{ url_for('placement.tasks') }}" method="POST" class="space-y-5">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Task Title</label>
-                        <input type="text" name="title" required
-                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 relative group hover:shadow-md transition-all flex flex-col h-full">
+                <div class="flex-1 mb-4">
+                    <div class="flex gap-2 mb-3">
+                        <span
+                            class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold uppercase tracking-wider">Assignment</span>
+                        <span
+                            class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs font-medium">
+                            <i class="far fa-clock mr-1"></i> Due: {{ task.deadline }}
+                        </span>
                     </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ task.title }}</h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm line-clamp-3">{{ task.description }}</p>
+                </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
-                        <select name="type"
-                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="assignment">General Assignment</option>
-                            <option value="quiz">Quiz</option>
-                            <option value="coding">Coding Challenge</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Target Batch</label>
-                        <select name="batch_id"
-                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="all">All Students</option>
-                            <option value="MCA_2025">MCA 2025</option>
-                            <option value="CSE_2025">CSE 2025</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Deadline</label>
-                        <input type="datetime-local" name="deadline"
-                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Instructions</label>
-                        <textarea name="description" rows="3"
-                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
-                    </div>
-
-                    <button type="submit"
-                        class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition-all">
-                        Publish Task
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <div class="flex-1">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Active Assignments</h2>
-            <div class="space-y-4">
-                {% for task in tasks %}
                 <div
-                    class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center group hover:border-brand-200 dark:hover:border-brand-800 transition-colors">
-                    <div>
-                        <div class="flex items-center gap-3 mb-1">
-                            <span
-                                class="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300">{{
-                                task.type }}</span>
-                            <h3 class="font-bold text-gray-900 dark:text-white">{{ task.title }}</h3>
-                        </div>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ task.description }}</p>
-                        <p class="text-xs text-gray-400 mt-2"><i class="fas fa-clock mr-1"></i> Due: {{ task.deadline or
-                            'No Deadline' }}</p>
+                    class="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4 mt-auto">
+                    <div class="text-sm text-gray-500">
+                        Assigned to: <span class="font-semibold text-gray-900 dark:text-white">{{ task.assigned_to_batch
+                            }}</span>
                     </div>
-                    <div class="text-center px-4">
-                        <span class="block text-2xl font-bold text-gray-900 dark:text-white">0</span>
-                        <span class="text-xs text-gray-500">Submissions</span>
+                    <div class="flex gap-2">
+                        <button data-id="{{ task.id }}" data-title="{{ task.title }}"
+                            data-description="{{ task.description }}" data-deadline="{{ task.deadline }}"
+                            data-batch="{{ task.assigned_to_batch }}" onclick="openEditModal(this)"
+                            class="text-blue-600 hover:text-blue-700 text-sm font-bold px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                            <i class="fas fa-edit mr-1"></i> Edit
+                        </button>
+                        <a href="{{ url_for('placement.view_submissions', task_id=task.id) }}"
+                            class="text-brand-600 hover:text-brand-700 text-sm font-bold flex items-center px-2 py-1 rounded hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors">
+                            View Submissions <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
                     </div>
                 </div>
-                {% else %}
-                <div
-                    class="text-center py-12 text-gray-400 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                    <p>No active tasks.</p>
-                </div>
-                {% endfor %}
             </div>
+            {% endfor %}
         </div>
+        {% else %}
+        <div
+            class="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+            <div
+                class="bg-gray-50 dark:bg-gray-700/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-clipboard-list text-2xl text-gray-400"></i>
+            </div>
+            <p class="text-gray-500">No active tasks found.</p>
+        </div>
+        {% endif %}
     </div>
-    {% endblock %}
+</div>
+
+<!-- Create Task Modal -->
+<div id="createTaskModal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl transform transition-all">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Create New Assignment</h3>
+            <button onclick="document.getElementById('createTaskModal').classList.add('hidden')"
+                class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('placement.tasks') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                <input type="text" name="title" required placeholder="e.g., Submit Resume"
+                    class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea name="description" rows="3" required placeholder="Instructions for students..."
+                    class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+            </div>
+
+            <input type="hidden" name="type" value="assignment">
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign to
+                        Batch</label>
+                    <select name="batch_id" required
+                        class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 outline-none">
+                        <option value="" disabled selected>Select Batch</option>
+                        {% for batch in batches %}
+                        <option value="{{ batch.id }}">{{ batch.batch_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deadline</label>
+                    <input type="date" name="deadline" required
+                        class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 outline-none">
+                </div>
+            </div>
+
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('createTaskModal').classList.add('hidden')"
+                    class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50">Cancel</button>
+                <button type="submit"
+                    class="px-5 py-2.5 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 shadow-lg shadow-brand-500/30">Create
+                    Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div id="editTaskModal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl transform transition-all">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Assignment</h3>
+            <button onclick="document.getElementById('editTaskModal').classList.add('hidden')"
+                class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="editTaskForm" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                <input type="text" id="edit_title" name="title" required
+                    class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea id="edit_description" name="description" rows="3" required
+                    class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign to
+                        Batch</label>
+                    <select id="edit_batch_id" name="batch_id" required
+                        class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 outline-none">
+                        {% for batch in batches %}
+                        <option value="{{ batch.id }}">{{ batch.batch_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deadline</label>
+                    <input type="date" id="edit_deadline" name="deadline" required
+                        class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 outline-none">
+                </div>
+            </div>
+
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('editTaskModal').classList.add('hidden')"
+                    class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50">Cancel</button>
+                <button type="submit"
+                    class="px-5 py-2.5 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 shadow-lg shadow-brand-500/30">Update
+                    Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(btn) {
+        const id = btn.dataset.id;
+        document.getElementById('editTaskForm').action = `/placement/tasks/edit/${id}`;
+        document.getElementById('edit_title').value = btn.dataset.title;
+        document.getElementById('edit_description').value = btn.dataset.description;
+        document.getElementById('edit_deadline').value = btn.dataset.deadline;
+
+        const batchId = btn.dataset.batch;
+
+        // Select batch if possible
+        const select = document.getElementById('edit_batch_id');
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].text === batchId || select.options[i].value === batchId) {
+                select.selectedIndex = i;
+                break;
+            }
+        }
+
+        document.getElementById('editTaskModal').classList.remove('hidden');
+    }
+</script>
+{% endblock %}

@@ -2,84 +2,116 @@
 
 {% block content %}
 <div class="p-6 lg:p-10 space-y-8">
-    
+
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+        <!-- DEBUG SECTION -->
+        {% if debug_info %}
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+            <p class="font-bold">Debug Info</p>
+
+            {% if debug_info.error %}
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-2 mb-2">
+                <strong>CRITICAL ERROR:</strong> {{ debug_info.error }}
+            </div>
+            {% endif %}
+
+            <pre class="text-xs overflow-auto max-h-40">
+Current UID: {{ debug_info.current_uid }}
+Found Batches: {{ debug_info.queried_batches_count }}
+Profile Managed IDs: {{ debug_info.profile_managed_ids }}
+Direct Query IDs: {{ debug_info.direct_query_found }}
+{% if debug_info.all_batches_raw %}
+ALL BATCHES IN DB (ID : CSA_ID):
+{% for b in debug_info.all_batches_raw %}
+{{ b.id }} : "{{ b.csa_id }}"
+{% endfor %}
+{% endif %}
+            </pre>
+        </div>
+        {% endif %}
+
         <div>
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Staff Dashboard</h1>
             <p class="text-gray-500 dark:text-gray-400 mt-1">
                 Overview of your assigned classes and student progress.
             </p>
         </div>
-        <a href="{{ url_for('csa.task_manager') }}" class="px-5 py-2.5 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-medium shadow-lg shadow-brand-500/30 flex items-center transition-all">
-            <i class="fas fa-bullhorn mr-2"></i> Repost Drives & Tasks
+        <div class="flex gap-3">
+            <a href="{{ url_for('csa.download_report') }}"
+                class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium shadow-lg shadow-red-500/20 flex items-center transition-all">
+                <i class="fas fa-file-pdf mr-2"></i> Download Report
+            </a>
+            <a href="{{ url_for('csa.task_manager') }}"
+                class="px-4 py-2.5 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-medium shadow-lg shadow-brand-500/30 flex items-center transition-all">
+                <i class="fas fa-bullhorn mr-2"></i> Repost Drives
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{{ url_for('csa.messages') }}"
+            class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-3 hover:border-brand-500 transition-colors">
+            <div class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 p-2 rounded-lg"><i class="fas fa-envelope"></i>
+            </div>
+            <span class="font-bold text-gray-700 dark:text-gray-200">Messages</span>
+        </a>
+
+        <a href="{{ url_for('csa.students') }}"
+            class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-3 hover:border-brand-500 transition-colors">
+            <div class="bg-purple-50 dark:bg-purple-900/30 text-purple-600 p-2 rounded-lg"><i class="fas fa-users"></i>
+            </div>
+            <span class="font-bold text-gray-700 dark:text-gray-200">Student Directory</span>
+        </a>
+
+        <a href="{{ url_for('csa.task_manager') }}"
+            class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-3 hover:border-brand-500 transition-colors">
+            <div class="bg-green-50 dark:bg-green-900/30 text-green-600 p-2 rounded-lg"><i class="fas fa-tasks"></i>
+            </div>
+            <span class="font-bold text-gray-700 dark:text-gray-200">Tasks</span>
+        </a>
+
+        <a href="{{ url_for('csa.students', filter='risk') }}"
+            class="p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30 flex items-center gap-3 hover:bg-red-100 hover:border-red-300 transition-all cursor-pointer">
+            <div class="bg-red-100 dark:bg-red-900/30 text-red-600 p-2 rounded-lg"><i
+                    class="fas fa-exclamation-triangle"></i></div>
+            <div>
+                <p class="text-xs text-red-500 font-bold">Risk Alerts</p>
+                <p class="font-bold text-gray-800 dark:text-white">{{ stats.alerts }} Students</p>
+            </div>
         </a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-            <div class="flex justify-between items-start">
-                <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">My Batches</p>
-                    <h3 class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.batch_count }}</h3>
-                </div>
-                <div class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-purple-600 dark:text-purple-400">
-                    <i class="fas fa-chalkboard text-2xl"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-            <div class="flex justify-between items-start">
-                <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
-                    <h3 class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.total_students }}</h3>
-                </div>
-                <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
-                    <i class="fas fa-user-graduate text-2xl"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-            <div class="flex justify-between items-start">
-                <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Risk Alerts</p>
-                    <h3 class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.alerts }}</h3>
-                    <p class="text-xs text-red-500 mt-1 font-medium">Inactive > 7 Days</p>
-                </div>
-                <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-xl text-red-600 dark:text-red-400">
-                    <i class="fas fa-exclamation-triangle text-2xl"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div
+        class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div class="p-6 border-b border-gray-100 dark:border-gray-700">
             <h3 class="font-bold text-gray-900 dark:text-white">Assigned Classes</h3>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
             {% for batch in batches %}
-            <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-md transition-shadow group">
+            <div
+                class="border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-md transition-shadow group">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h4 class="font-bold text-lg text-gray-900 dark:text-white">{{ batch.batch_name }}</h4>
                         <p class="text-sm text-gray-500">{{ batch.department }} | {{ batch.current_semester }}</p>
                     </div>
-                    <div class="h-10 w-10 rounded-full bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold">
+                    <div
+                        class="h-10 w-10 rounded-full bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold">
                         {{ batch.student_count }}
                     </div>
                 </div>
-                <a href="{{ url_for('csa.view_batch', batch_id=batch.id) }}" class="block w-full py-2 text-center bg-gray-50 dark:bg-gray-700 hover:bg-brand-600 hover:text-white text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm font-bold">
+                <a href="{{ url_for('csa.view_batch', batch_id=batch.id) }}"
+                    class="block w-full py-2 text-center bg-gray-50 dark:bg-gray-700 hover:bg-brand-600 hover:text-white text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm font-bold">
                     Manage Class <i class="fas fa-arrow-right ml-1"></i>
                 </a>
             </div>
             {% else %}
             <div class="col-span-full text-center py-10 text-gray-500">
                 <i class="fas fa-folder-open text-4xl mb-3 opacity-30"></i>
-                <p>No batches assigned to you yet.</p>
-                <p class="text-sm mt-1">Contact your HOD to be assigned to a class.</p>
+                <p>No batches found via ID.</p>
+                <p class="text-xs mt-2 opacity-50">Attempted IDs: {{ managed_batch_ids }}</p>
             </div>
             {% endfor %}
         </div>
