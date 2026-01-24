@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" class="light">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PrepAI - Career Ecosystem</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -14,11 +15,11 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#fff1f2',  
+                            50: '#fff1f2',
                             100: '#ffe4e6',
                             500: '#f43f5e',
                             600: '#e11d48', // Primary Rose Red
-                            700: '#be123c', 
+                            700: '#be123c',
                             900: '#881337',
                         },
                         gray: {
@@ -27,7 +28,7 @@
                         }
                     },
                     borderRadius: {
-                        'card': '1rem', 
+                        'card': '1rem',
                     }
                 }
             }
@@ -35,14 +36,17 @@
     </script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
     </style>
 </head>
 
-<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col">
+<body
+    class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col">
 
     <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -57,16 +61,20 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    
+
                     {% if session.get('user') %}
                     <div class="relative" id="notif-container">
-                        <button onclick="toggleNotifications()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400 relative focus:outline-none">
+                        <button onclick="toggleNotifications()"
+                            class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400 relative focus:outline-none">
                             <i class="fas fa-bell"></i>
-                            <span id="notif-badge" class="hidden absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                            <span id="notif-badge"
+                                class="hidden absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
                         </button>
-                        
-                        <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
-                            <div class="p-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+
+                        <div id="notif-dropdown"
+                            class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
+                            <div
+                                class="p-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                                 <h3 class="font-bold text-sm text-gray-900 dark:text-white">Notifications</h3>
                             </div>
                             <div id="notif-list" class="max-h-64 overflow-y-auto">
@@ -76,7 +84,8 @@
                     </div>
                     {% endif %}
 
-                    <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400 focus:outline-none">
+                    <button onclick="toggleTheme()"
+                        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-500 dark:text-gray-400 focus:outline-none">
                         <i id="theme-icon" class="fa-solid fa-moon"></i>
                     </button>
 
@@ -85,7 +94,8 @@
                         <span class="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
                             {{ session['user'].get('full_name', 'User') }}
                         </span>
-                        <a href="{{ url_for('auth.logout') }}" class="text-sm font-bold text-red-500 hover:text-red-600 transition">
+                        <a href="{{ url_for('auth.logout') }}"
+                            class="text-sm font-bold text-red-500 hover:text-red-600 transition">
                             Logout <i class="fas fa-sign-out-alt ml-1"></i>
                         </a>
                     </div>
@@ -98,21 +108,21 @@
     <div class="max-w-7xl mx-auto mt-6 px-4 w-full">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            {% for category, message in messages %}
-            <div class="p-4 mb-4 text-sm font-medium rounded-xl shadow-sm flex items-center gap-3 animate-fade-in
+        {% for category, message in messages %}
+        <div class="p-4 mb-4 text-sm font-medium rounded-xl shadow-sm flex items-center gap-3 animate-fade-in
                 {% if category == 'error' %} bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200 border border-red-200 dark:border-red-800
                 {% elif category == 'success' %} bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200 border border-green-200 dark:border-green-800
                 {% else %} bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 border border-blue-200 dark:border-blue-800 {% endif %}"
-                role="alert">
-                
-                <div class="shrink-0">
-                    {% if category == 'error' %}<i class="fas fa-exclamation-circle"></i>
-                    {% elif category == 'success' %}<i class="fas fa-check-circle"></i>
-                    {% else %}<i class="fas fa-info-circle"></i>{% endif %}
-                </div>
-                <span>{{ message }}</span>
+            role="alert">
+
+            <div class="shrink-0">
+                {% if category == 'error' %}<i class="fas fa-exclamation-circle"></i>
+                {% elif category == 'success' %}<i class="fas fa-check-circle"></i>
+                {% else %}<i class="fas fa-info-circle"></i>{% endif %}
             </div>
-            {% endfor %}
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
         {% endif %}
         {% endwith %}
     </div>
@@ -157,20 +167,21 @@
         }
 
         async function fetchNotifications() {
-            let apiPath = '/csa/api/notifications'; 
+            let apiPath = '/csa/api/notifications';
             if (window.location.pathname.startsWith('/placement')) apiPath = '/placement/api/notifications';
             else if (window.location.pathname.startsWith('/hod')) apiPath = '/hod/api/notifications';
+            else if (window.location.pathname.startsWith('/student')) apiPath = '/student/api/notifications';
 
             try {
-                const res = await fetch(apiPath);
-                if (!res.ok) return; 
+                const res = await fetch(apiPath + '?t=' + new Date().getTime());
+                if (!res.ok) return;
 
                 const data = await res.json();
                 const list = document.getElementById('notif-list');
                 const badge = document.getElementById('notif-badge');
-                
+
                 if (data.length > 0) {
-                    if(badge) badge.classList.remove('hidden');
+                    if (badge) badge.classList.remove('hidden');
                     // Since API now returns a list with 1 item (the single string msg)
                     list.innerHTML = data.map(n => `
                         <div class="p-3 border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -184,11 +195,11 @@
                         </div>
                     `).join('');
                 } else {
-                    if(badge) badge.classList.add('hidden');
+                    if (badge) badge.classList.add('hidden');
                     list.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No new notifications</div>';
                 }
-            } catch (e) { 
-                console.log("Notification poll skipped"); 
+            } catch (e) {
+                console.log("Notification poll skipped");
             }
         }
 
@@ -199,4 +210,5 @@
     {% endif %}
 
 </body>
+
 </html>

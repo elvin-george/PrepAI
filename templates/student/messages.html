@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="px-6 pt-6 pb-0">
+    <a href="{{ url_for('student.dashboard') }}"
+        class="text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+    </a>
+</div>
+<div
+    class="flex h-[calc(100vh-8rem)] bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden m-6 mt-4">
+
+    <!-- Users List/Sidebar -->
+    <div class="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50/50 dark:bg-gray-900/50">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
+            <h2 class="font-bold text-gray-800 dark:text-white">Messages</h2>
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-sm"></i>
+                <input type="text" placeholder="Search staff..."
+                    class="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-2 space-y-1">
+            {% if users %}
+            {% for u in users %}
+            <button onclick="selectUser('{{ u.id }}', '{{ u.name }}')"
+                class="w-full text-left p-3 rounded-xl hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition-all flex items-center gap-3 border border-transparent hover:border-gray-100 dark:hover:border-gray-600 group">
+                <div
+                    class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand-700 dark:text-brand-400 font-bold group-hover:bg-brand-600 group-hover:text-white transition-colors">
+                    {{ u.name[0] }}
+                </div>
+                <div class="overflow-hidden">
+                    <p class="font-semibold text-gray-900 dark:text-white text-sm truncate">{{ u.name }}</p>
+                    <p class="text-xs text-gray-500 truncate capitalize">{{ u.user_type | replace('_', ' ') }}</p>
+                </div>
+            </button>
+            {% endfor %}
+            {% else %}
+            <div class="p-4 text-center text-gray-400 text-sm">
+                No staff members found to chat with.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="flex-1 flex flex-col bg-white dark:bg-gray-800">
+        <div id="empty-state" class="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <div class="w-20 h-20 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mb-4">
+                <i class="fas fa-comments text-4xl opacity-50"></i>
+            </div>
+            <p class="font-medium">Select a staff member to start chatting</p>
+        </div>
+
+        <div id="chat-interface" class="hidden flex-col h-full">
+            <div
+                class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 shadow-sm bg-white dark:bg-gray-800 z-10">
+                <div class="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center text-white font-bold"
+                    id="header-avatar"></div>
+                <div>
+                    <h3 class="font-bold text-gray-900 dark:text-white" id="header-name">User Name</h3>
+                    <p class="text-xs text-green-500 flex items-center"><span
+                            class="w-2 h-2 bg-green-500 rounded-full mr-1.5"></span> Online</p>
+                </div>
+            </div>
+
+            <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-900/20">
+            </div>
+
+            <div class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                <form id="msg-form" class="flex gap-3">
+                    <input type="text" id="msg-input" placeholder="Type your message..." required
+                        class="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-brand-500 transition-all">
+                    <button type="submit"
+                        class="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-transform active:scale-95">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentReceiverId = null;
+
+    function selectUser(uid, name) {
+        currentReceiverId = uid;
+        document.getElementById('empty-state').classList.add('hidden');
+        document.getElementById('chat-interface').classList.remove('hidden');
+        document.getElementById('chat-interface').classList.add('flex');
+        document.getElementById('header-name').innerText = name;
+        document.getElementById('header-avatar').innerText = name.charAt(0);
+        loadMessages();
+    }
+
+    async function loadMessages() {
+        if (!currentReceiverId) return;
+        const container = document.getElementById('messages-container');
+        try {
+            // Using Student API route
+            const res = await fetch(`/student/api/messages/${currentReceiverId}`);
+            const msgs = await res.json();
+            container.innerHTML = '';
+            msgs.forEach(m => {
+                const isMe = (m.sender_id !== currentReceiverId);
+                const bubble = document.createElement('div');
+                bubble.className = `flex ${isMe ? 'justify-end' : 'justify-start'}`;
+                bubble.innerHTML = `
+                <div class="max-w-[70%] px-5 py-3 rounded-2xl text-sm ${isMe ? 'bg-brand-600 text-white rounded-tr-sm' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm border border-gray-100 dark:border-gray-600 rounded-tl-sm'}">
+                    <p>${m.message}</p>
+                    <p class="text-[10px] mt-1 opacity-70 text-right">${new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>`;
+                container.appendChild(bubble);
+            });
+            container.scrollTop = container.scrollHeight;
+        } catch (e) { console.error(e); }
+    }
+
+    document.getElementById('msg-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const input = document.getElementById('msg-input');
+        const msg = input.value.trim();
+        if (!msg || !currentReceiverId) return;
+
+        try {
+            // Using Student API route
+            await fetch('/student/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ receiver_id: currentReceiverId, message: msg })
+            });
+            input.value = '';
+            loadMessages();
+        } catch (e) { alert('Error sending'); }
+    });
+</script>
+{% endblock %}

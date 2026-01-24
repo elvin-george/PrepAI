@@ -1,98 +1,228 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
 
-{% block content %}
-<div class="h-[calc(100vh-100px)] flex flex-col p-4 lg:p-6">
-    
-    <div class="bg-white dark:bg-gray-800 p-4 rounded-t-2xl border-b border-gray-100 dark:border-gray-700 flex justify-between items-center shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-600">
-                <i class="fas fa-robot text-lg"></i>
-            </div>
-            <div>
-                <h2 class="font-bold text-gray-900 dark:text-white">PrepAI Assistant</h2>
-                <p class="text-xs text-green-500 font-medium flex items-center gap-1">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Online • RAG Active
-                </p>
-            </div>
-        </div>
-        <button onclick="clearChat()" class="text-gray-400 hover:text-red-500 text-sm">
-            <i class="fas fa-trash-alt"></i> Clear
-        </button>
-    </div>
-
-    <div id="chatBox" class="flex-1 bg-gray-50 dark:bg-gray-900 overflow-y-auto p-4 space-y-4">
-        <div class="flex gap-3">
-            <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white shrink-0 text-xs">AI</div>
-            <div class="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[80%] text-sm">
-                Hello! I am trained on your college documents. Ask me about the syllabus, placement rules, or eligibility criteria.
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white dark:bg-gray-800 p-4 rounded-b-2xl shadow-lg">
-        <form id="chatForm" class="flex gap-2">
-            <input type="text" id="userInput" placeholder="Ask about syllabus, drives, etc..." autocomplete="off"
-                class="flex-1 bg-gray-100 dark:bg-gray-700 border-0 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none">
-            <button type="submit" id="sendBtn" 
-                class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </form>
-    </div>
-</div>
-
-<script>
-    const chatBox = document.getElementById('chatBox');
-    const chatForm = document.getElementById('chatForm');
-    const userInput = document.getElementById('userInput');
-
-    function appendMessage(text, isUser) {
-        const div = document.createElement('div');
-        div.className = isUser ? "flex gap-3 justify-end" : "flex gap-3";
-        
-        const bubble = document.createElement('div');
-        bubble.className = isUser 
-            ? "bg-brand-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md max-w-[80%] text-sm"
-            : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[80%] text-sm";
-        
-        bubble.innerHTML = text.replace(/\n/g, '<br>'); // Simple Markdown-ish
-        div.appendChild(bubble);
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    chatForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const msg = userInput.value.trim();
-        if (!msg) return;
-
-        // 1. Show User Message
-        appendMessage(msg, true);
-        userInput.value = '';
-        
-        // 2. Show Loading Indicator
-        const loadingDiv = document.createElement('div');
-        loadingDiv.className = "flex gap-3";
-        loadingDiv.innerHTML = `<div class="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center text-white text-xs">AI</div><div class="bg-gray-200 dark:bg-gray-700 p-3 rounded-2xl rounded-tl-none text-sm animate-pulse">Thinking...</div>`;
-        chatBox.appendChild(loadingDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        try {
-            // 3. Call API
-            const res = await fetch('/student/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: msg })
-            });
-            const data = await res.json();
-            
-            // 4. Remove Loading & Show AI Response
-            chatBox.removeChild(loadingDiv);
-            appendMessage(data.response, false);
-        } catch (err) {
-            chatBox.removeChild(loadingDiv);
-            appendMessage("❌ Error connecting to server.", false);
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - GradMate AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                            900: '#881337',
+                        }
+                    }
+                }
+            }
         }
-    });
-</script>
-{% endblock %}
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+
+        <!-- Sidebar -->
+        {% include 'includes/sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col min-h-0">
+            <!-- Top Navigation -->
+            {% include 'includes/navbar.html' %}
+
+            <!-- Main Content Area (Full height for chat) -->
+            <main class="flex-1 flex flex-col p-4 lg:p-6 overflow-hidden relative z-0">
+
+                <div
+                    class="flex-1 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden">
+
+                    <!-- Chat Header -->
+                    <div
+                        class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 z-10">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-600 animated-pulse">
+                                <i class="fas fa-robot text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 class="font-bold text-gray-900 dark:text-white">PrepAI Assistant</h2>
+                                <p class="text-xs text-green-500 font-medium flex items-center gap-1">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Online • RAG
+                                    Active
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="clearChat()"
+                            class="text-gray-400 hover:text-red-500 text-sm p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                            <i class="fas fa-trash-alt"></i> <span class="hidden sm:inline">Clear Chat</span>
+                        </button>
+                    </div>
+
+                    <!-- Chat Messages Area -->
+                    <div id="chatBox" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-gray-900/50">
+                        <!-- Welcome Message -->
+                        <div class="flex gap-3">
+                            <div
+                                class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white shrink-0 text-xs mt-1">
+                                AI</div>
+                            <div
+                                class="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 p-3.5 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 dark:border-gray-700 max-w-[85%] text-sm leading-relaxed">
+                                Hello! I am trained on your college documents. Ask me about the syllabus, placement
+                                rules, or eligibility criteria.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input Area -->
+                    <div class="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+                        <form id="chatForm" class="flex gap-2 relative">
+                            <input type="text" id="userInput" placeholder="Ask about syllabus, drives, etc..."
+                                autocomplete="off"
+                                class="flex-1 bg-gray-100 dark:bg-gray-700 border-0 text-gray-900 dark:text-white rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-brand-500 outline-none pr-12 transition-all">
+
+                            <button type="submit" id="sendBtn"
+                                class="absolute right-2 top-2 bottom-2 aspect-square bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold transition-all flex items-center justify-center shadow-lg shadow-brand-500/20">
+                                <i class="fas fa-paper-plane text-sm"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const chatForm = document.getElementById('chatForm');
+        const userInput = document.getElementById('userInput');
+
+        function appendMessage(text, isUser) {
+            const div = document.createElement('div');
+            div.className = isUser ? "flex gap-3 justify-end animate-fade-in-up" : "flex gap-3 animate-fade-in-up";
+
+            // Avatar for AI
+            let avatar = '';
+            if (!isUser) {
+                avatar = `<div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white shrink-0 text-xs mt-1">AI</div>`;
+            }
+
+            const bubble = document.createElement('div');
+            bubble.className = isUser
+                ? "bg-brand-600 text-white p-3.5 rounded-2xl rounded-tr-none shadow-md max-w-[85%] text-sm leading-relaxed"
+                : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 p-3.5 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 dark:border-gray-700 max-w-[85%] text-sm leading-relaxed";
+
+            // Format some basic markdown
+            let content = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            bubble.innerHTML = content;
+
+            div.innerHTML = isUser ? "" : avatar;
+            div.appendChild(bubble);
+            chatBox.appendChild(div);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        }
+
+        function clearChat() {
+            chatBox.innerHTML = '';
+            appendMessage("Chat cleared. How can I help you now?", false);
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = userInput.value.trim();
+            if (!msg) return;
+
+            // 1. Show User Message
+            appendMessage(msg, true);
+            userInput.value = '';
+
+            // 2. Show Loading Indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingMsg';
+            loadingDiv.className = "flex gap-3 animate-pulse";
+            loadingDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white shrink-0 text-xs mt-1">AI</div>
+                <div class="bg-gray-100 dark:bg-gray-700 p-3.5 rounded-2xl rounded-tl-none text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
+                </div>`;
+            chatBox.appendChild(loadingDiv);
+            scrollToBottom();
+
+            try {
+                // 3. Call API
+                const res = await fetch('/student/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+                const data = await res.json();
+
+                // 4. Remove Loading & Show AI Response
+                const loader = document.getElementById('loadingMsg');
+                if (loader) loader.remove();
+
+                appendMessage(data.response, false);
+            } catch (err) {
+                const loader = document.getElementById('loadingMsg');
+                if (loader) loader.remove();
+                appendMessage("❌ Error connecting to server.", false);
+            }
+        });
+    </script>
+    <style>
+        .animate-fade-in-up {
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</body>
+
+</html>

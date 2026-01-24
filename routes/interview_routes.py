@@ -1,71 +1,124 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
-import google.generativeai as genai
 import os
+import requests
+import json
+from datetime import datetime
 
 interview_bp = Blueprint('interview', __name__)
 
-# Configure AI
+# Load API Key
 api_key = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-1.5-flash')
 
-def check_student():
-    return 'user' in session and session['user']['role'] == 'student'
+# --- SMART MODEL FINDER (Same as Chatbot) ---
+def get_working_model():
+    """Finds the best available model to avoid 404 errors"""
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            models = response.json().get('models', [])
+            model_names = [m['name'] for m in models]
+            
+            # Priority 1: Gemini 2.5 Flash (What worked yesterday)
+            for m in model_names: 
+                if 'gemini-2.5-flash' in m: return m.split('/')[-1]
+
+            # Priority 2: Gemini 1.5 Flash
+            for m in model_names: 
+                if 'gemini-1.5-flash' in m and 'latest' not in m: return m.split('/')[-1]
+
+            # Priority 3: Any generative model
+            for m in model_names:
+                if 'generateContent' in m.get('supportedGenerationMethods', []):
+                    return m.split('/')[-1]
+                    
+        return "gemini-2.5-flash" # Default fallback
+    except:
+        return "gemini-2.5-flash"
+
+# Set the model ONCE when app starts
+MODEL_NAME = get_working_model()
+print(f"🎤 Mock Interview configured to use: {MODEL_NAME}")
+
+def call_gemini(prompt):
+    """Helper to call Gemini via Direct HTTP"""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent?key={api_key}"
+    headers = {'Content-Type': 'application/json'}
+    data = { "contents": [{ "parts": [{"text": prompt}] }] }
+    
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            return response.json()['candidates'][0]['content']['parts'][0]['text']
+        else:
+            return f"Error: {response.text}"
+    except Exception as e:
+        return f"System Error: {str(e)}"
 
 @interview_bp.route('/setup')
-def setup_interview():
-    if not check_student(): return redirect(url_for('auth.login'))
-    return render_template('student/interview_setup.html')
+def setup():
+    if 'user' not in session or session['user']['role'] != 'student':
+        return redirect(url_for('auth.login'))
+    return render_template('student/ai/interview.html')
 
-@interview_bp.route('/start', methods=['POST'])
-def start_interview():
-    if not check_student(): return jsonify({'error': 'Unauthorized'}), 401
+@interview_bp.route('/generate_question', methods=['POST'])
+def generate_question():
+    data = request.json
+    topic = data.get('topic', 'General HR')
+    difficulty = data.get('difficulty', 'Medium')
     
-    topic = request.json.get('topic', 'General HR')
-    difficulty = request.json.get('difficulty', 'Medium')
-    
-    # 1. Ask AI to generate a question
     prompt = f"""
-    Act as a strict technical interviewer. 
-    Generate a single, unique {difficulty}-level interview question about {topic}.
-    Do not provide the answer. Just the question.
+    Act as a strict technical interviewer.
+    Topic: {topic}
+    Difficulty: {difficulty}
+    
+    Task: Generate exactly ONE interview question. 
+    Do not provide the answer. 
+    Do not add introductory text. 
+    Just output the question.
     """
-    response = model.generate_content(prompt)
     
-    # Store context in session
-    session['current_question'] = response.text
-    session['current_topic'] = topic
-    
-    return jsonify({'question': response.text})
+    question = call_gemini(prompt)
+    session['current_question'] = question
+    return jsonify({'question': question})
 
 @interview_bp.route('/submit_answer', methods=['POST'])
 def submit_answer():
-    if not check_student(): return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json
+    user_answer = data.get('answer')
+    question = session.get('current_question', 'Unknown Question')
     
-    user_answer = request.json.get('answer')
-    question = session.get('current_question')
-    
-    if not question: return jsonify({'error': 'No active session'}), 400
-    
-    # 2. Ask AI to grade the answer
     prompt = f"""
-    You are an interviewer. 
+    You are an interviewer evaluating a candidate.
+    
     Question: "{question}"
-    Student Answer: "{user_answer}"
+    Candidate Answer: "{user_answer}"
     
     Task:
-    1. Rate the answer out of 10.
-    2. Provide 2 lines of specific feedback on how to improve.
-    3. Suggest a "Model Answer" (the perfect response).
+    1. Give a Score out of 10.
+    2. Provide constructive feedback (max 2 sentences).
+    3. Provide a 'Model Answer' (what they should have said).
     
-    Format the output as JSON:
+    Output strictly in JSON format:
     {{
-        "score": 7,
-        "feedback": "Good attempt, but you missed...",
-        "model_answer": "A better way to say this is..."
+        "score": 8,
+        "feedback": "...",
+        "model_answer": "..."
     }}
     """
-    # Force JSON response mode (Gemini 1.5 Feature)
-    response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
     
-    return jsonify({'result': response.text})
+    response_text = call_gemini(prompt)
+    
+    # Clean up JSON
+    try:
+        clean_json = response_text.replace('```json', '').replace('```', '').strip()
+        feedback_data = json.loads(clean_json)
+    except:
+        feedback_data = {
+            "score": "?", 
+            "feedback": response_text, 
+            "model_answer": "N/A"
+        }
+        
+    return jsonify(feedback_data)

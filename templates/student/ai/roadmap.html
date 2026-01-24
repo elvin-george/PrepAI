@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Roadmap - GradMate AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                            900: '#881337',
+                        },
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+
+        <!-- Sidebar -->
+        {% include 'includes/sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col min-h-0">
+            <!-- Top Navigation -->
+            {% include 'includes/navbar.html' %}
+
+            <!-- Main Content -->
+            <main class="p-6 overflow-y-auto relative z-0">
+                <div class="max-w-5xl mx-auto space-y-8 animate-fade-in-down">
+                    <div class="text-center">
+                        <div
+                            class="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
+                            <i class="fas fa-map-signs text-white text-2xl"></i>
+                        </div>
+                        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">AI Learning Roadmap</h1>
+                        <p class="text-gray-500 dark:text-gray-400 mt-2">Generate a personalized study plan in seconds.
+                        </p>
+                    </div>
+
+                    <div
+                        class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label
+                                    class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Topic</label>
+                                <input type="text" id="topic" placeholder="e.g. Python, Data Science"
+                                    class="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Duration</label>
+                                <select id="duration"
+                                    class="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                                    <option value="1 Month">1 Month (Crash Course)</option>
+                                    <option value="3 Months">3 Months (Deep Dive)</option>
+                                    <option value="6 Months">6 Months (Mastery)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Current
+                                    Level</label>
+                                <select id="level"
+                                    class="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                                    <option value="Beginner">Beginner</option>
+                                    <option value="Intermediate">Intermediate</option>
+                                    <option value="Advanced">Advanced</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button onclick="generateRoadmap()" id="genBtn"
+                            class="mt-6 w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-brand-500/30">
+                            Generate Roadmap
+                        </button>
+                    </div>
+
+                    <div id="resultArea" class="hidden space-y-6 pb-10">
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        async function generateRoadmap() {
+            const btn = document.getElementById('genBtn');
+            const topic = document.getElementById('topic').value;
+            const duration = document.getElementById('duration').value;
+            const level = document.getElementById('level').value;
+
+            if (!topic) return alert("Please enter a topic!");
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/student/api/generate_roadmap', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, duration, level })
+                });
+
+                if (res.status === 503 || res.status === 500) {
+                    const errData = await res.json();
+                    alert(errData.error || "Service unavailable.");
+                    return;
+                }
+
+                const data = await res.json();
+
+                const container = document.getElementById('resultArea');
+                container.innerHTML = '';
+                container.classList.remove('hidden');
+
+                if (data.roadmap) {
+                    data.roadmap.forEach((item, index) => {
+                        container.innerHTML += `
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border-l-4 border-brand-500 shadow-sm relative animate-fade-in-up" style="animation-delay: ${index * 100}ms">
+                            <div class="absolute -left-3 top-6 w-6 h-6 bg-brand-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+                                ${index + 1}
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-xl font-bold text-gray-900 dark:text-white">${item.week}: ${item.title}</h3>
+                                <ul class="mt-3 space-y-2">
+                                    ${item.topics.map(t => `<li class="flex items-center text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg"><i class="fas fa-check-circle text-green-500 mr-3"></i> ${t}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    });
+                } else {
+                    alert("Incorrect format received.");
+                }
+
+            } catch (e) {
+                console.error(e);
+                alert("Error generating roadmap.");
+            } finally {
+                btn.innerHTML = 'Generate Roadmap';
+                btn.disabled = false;
+            }
+        }
+    </script>
+    <style>
+        .animate-fade-in-down {
+            animation: fadeInDown 0.5s ease-out;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out backwards;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</body>
+
+</html>

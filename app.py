@@ -16,6 +16,7 @@ except ImportError:
 load_dotenv()
 
 app = Flask(__name__)
+# Force Reload Trigger 2026-01-24 v3
 
 # 2. Configuration
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret_key_123") 

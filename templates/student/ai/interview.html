@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6 space-y-8">
+    
+    <div class="text-center space-y-2">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            <span class="text-brand-600">AI</span> Voice Interview
+        </h1>
+        <p class="text-gray-500">Enable your speaker and microphone for the best experience.</p>
+    </div>
+
+    <div id="setupPhase" class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 transition-all">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Topic</label>
+                <select id="topic" class="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand-500 text-gray-900 dark:text-white">
+                    <option value="Behavioral HR">HR (Behavioral)</option>
+                    <option value="Java Programming">Java Core</option>
+                    <option value="Python Development">Python</option>
+                    <option value="Data Structures">DSA</option>
+                    <option value="System Design">System Design</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Difficulty</label>
+                <select id="difficulty" class="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand-500 text-gray-900 dark:text-white">
+                    <option value="Intern">Intern / Beginner</option>
+                    <option value="Junior Developer">Junior Developer</option>
+                    <option value="Senior Developer">Senior Developer</option>
+                </select>
+            </div>
+        </div>
+        
+        <button onclick="startInterview()" class="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-brand-500/30 flex items-center justify-center gap-2">
+            <i class="fas fa-play"></i> Start Interview Session
+        </button>
+    </div>
+
+    <div id="interviewPhase" class="hidden space-y-6">
+        
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border-l-4 border-brand-500 shadow-sm relative">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-robot text-brand-600 text-xl"></i>
+                    <h3 class="font-bold text-gray-900 dark:text-white">Interviewer asks:</h3>
+                </div>
+                <button onclick="speakQuestion()" class="text-gray-400 hover:text-brand-600 transition-colors" title="Replay Audio">
+                    <i class="fas fa-volume-up text-lg"></i>
+                </button>
+            </div>
+            <p id="questionText" class="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed min-h-[60px]">
+                Initializing...
+            </p>
+        </div>
+
+        <div class="relative group">
+            <div id="micIndicator" class="hidden absolute top-4 right-4 flex items-center gap-2">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                <span class="text-xs font-bold text-red-500 uppercase tracking-wider">Listening...</span>
+            </div>
+
+            <textarea id="answerInput" rows="6" placeholder="Click the microphone to speak..." 
+                class="w-full p-6 rounded-2xl bg-gray-50 dark:bg-gray-900 border-2 border-transparent focus:border-brand-500 focus:ring-0 text-gray-900 dark:text-white resize-none transition-all text-lg leading-relaxed"></textarea>
+            
+            <button onclick="toggleVoice()" id="micBtn" class="absolute bottom-4 right-4 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-brand-600 hover:scale-110 shadow-md p-4 rounded-full transition-all z-10 border border-gray-100 dark:border-gray-700">
+                <i class="fas fa-microphone text-xl"></i>
+            </button>
+        </div>
+
+        <button onclick="submitAnswer()" id="submitBtn" class="w-full py-4 bg-gray-900 dark:bg-gray-700 hover:bg-black text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+            <span>Submit Answer</span> <i class="fas fa-paper-plane"></i>
+        </button>
+
+        <div id="feedbackArea" class="hidden animate-fade-in-up space-y-4">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-green-800 dark:text-green-300">AI Feedback</h3>
+                        <p id="feedbackText" class="text-gray-700 dark:text-gray-300 mt-1"></p>
+                    </div>
+                    <div id="scoreBadge" class="bg-white dark:bg-gray-900 text-3xl font-black text-green-600 px-4 py-2 rounded-xl shadow-sm">
+                        -/10
+                    </div>
+                </div>
+                
+                <div class="bg-white/60 dark:bg-black/20 p-4 rounded-xl">
+                    <span class="text-xs font-bold uppercase text-gray-500 tracking-wider">Better Answer:</span>
+                    <p id="modelAnswer" class="text-gray-800 dark:text-gray-200 italic mt-1"></p>
+                </div>
+            </div>
+            
+            <button onclick="startInterview()" class="w-full py-4 bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-bold rounded-xl hover:bg-brand-200 transition-all flex items-center justify-center gap-2">
+                Next Question <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- SPEECH RECOGNITION (STT) ---
+let recognition;
+let isListening = false;
+
+if ('webkitSpeechRecognition' in window) {
+    recognition = new webkitSpeechRecognition();
+    recognition.continuous = true;      // Keep listening until stopped
+    recognition.interimResults = true;  // Show text WHILE speaking (Gemini Live feel)
+    recognition.lang = 'en-US';
+
+    recognition.onstart = function() {
+        isListening = true;
+        document.getElementById('micIndicator').classList.remove('hidden');
+        document.getElementById('micBtn').classList.add('bg-red-500', 'text-white', 'border-red-500');
+        document.getElementById('micBtn').classList.remove('bg-white', 'text-gray-600');
+        document.getElementById('micBtn').innerHTML = '<i class="fas fa-stop"></i>';
+    };
+
+    recognition.onend = function() {
+        isListening = false;
+        document.getElementById('micIndicator').classList.add('hidden');
+        document.getElementById('micBtn').classList.remove('bg-red-500', 'text-white', 'border-red-500');
+        document.getElementById('micBtn').classList.add('bg-white', 'text-gray-600');
+        document.getElementById('micBtn').innerHTML = '<i class="fas fa-microphone"></i>';
+    };
+
+    recognition.onresult = function(event) {
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+        
+        // Append only new final text to existing content
+        const inputBox = document.getElementById('answerInput');
+        
+        // This logic keeps the "Live" feel
+        // Note: For simplicity, we just update the value. 
+        // A full implementation would manage cursor position, but this works for dictation.
+        if (finalTranscript) {
+             inputBox.value += finalTranscript + " ";
+        }
+    };
+
+    recognition.onerror = function(event) {
+        console.error("Speech error:", event.error);
+        if(event.error === 'not-allowed') {
+            alert("Microphone access blocked. Please allow permissions in your browser settings.");
+        }
+        stopListening();
+    };
+} else {
+    alert("Voice features not supported in this browser. Please use Google Chrome.");
+}
+
+function toggleVoice() {
+    if (!recognition) return;
+    if (isListening) {
+        stopListening();
+    } else {
+        startListening();
+    }
+}
+
+function startListening() {
+    if (recognition) recognition.start();
+}
+
+function stopListening() {
+    if (recognition) recognition.stop();
+}
+
+// --- TEXT TO SPEECH (TTS) ---
+function speakQuestion() {
+    const text = document.getElementById('questionText').innerText;
+    if (!text) return;
+
+    // Cancel any previous speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 1.0; 
+    utterance.pitch = 1.0;
+    
+    // Optional: Select a better voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice => voice.name.includes('Google US English'));
+    if (preferredVoice) utterance.voice = preferredVoice;
+
+    window.speechSynthesis.speak(utterance);
+}
+
+// --- BACKEND LOGIC ---
+async function startInterview() {
+    // UI Reset
+    document.getElementById('setupPhase').classList.add('hidden');
+    document.getElementById('interviewPhase').classList.remove('hidden');
+    document.getElementById('feedbackArea').classList.add('hidden');
+    document.getElementById('answerInput').value = '';
+    document.getElementById('submitBtn').classList.remove('hidden');
+    
+    const qBox = document.getElementById('questionText');
+    qBox.innerHTML = '<span class="animate-pulse">Thinking of a question...</span>';
+
+    const topic = document.getElementById('topic').value;
+    const difficulty = document.getElementById('difficulty').value;
+
+    try {
+        const res = await fetch('/interview/generate_question', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ topic, difficulty })
+        });
+        const data = await res.json();
+        
+        // Update Text
+        qBox.innerText = data.question;
+        
+        // Trigger Audio (Auto-Speak)
+        setTimeout(speakQuestion, 500); // Small delay to ensure text is rendered
+        
+    } catch (err) {
+        qBox.innerText = "Error connecting to AI.";
+    }
+}
+
+async function submitAnswer() {
+    const btn = document.getElementById('submitBtn');
+    const answer = document.getElementById('answerInput').value;
+    
+    if (!answer.trim()) return alert("Please answer the question first!");
+
+    // Stop mic if running
+    if (isListening) stopListening();
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/interview/submit_answer', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ answer })
+        });
+        
+        const data = await res.json();
+        
+        document.getElementById('feedbackArea').classList.remove('hidden');
+        document.getElementById('submitBtn').classList.add('hidden');
+        
+        document.getElementById('scoreBadge').innerText = `${data.score}/10`;
+        document.getElementById('feedbackText').innerText = data.feedback;
+        document.getElementById('modelAnswer').innerText = data.model_answer;
+        
+    } catch (err) {
+        alert("Error grading answer.");
+    } finally {
+        btn.innerHTML = 'Submit Answer';
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

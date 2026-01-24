@@ -349,6 +349,7 @@ def tasks():
             'assigned_by': session['user']['uid'],
             'assigned_to_batch': request.form.get('batch_id'),
             'deadline': request.form.get('deadline'),
+            'status': 'active',
             'created_at': firestore.SERVER_TIMESTAMP
         })
         flash('Task assigned!', 'success')
