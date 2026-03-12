@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_file, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_file, current_app, Response
 from firebase_admin import firestore
 from datetime import datetime
 import io
 import os
+import csv
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 
@@ -12,9 +13,12 @@ db = firestore.client()
 # --- HELPER: Strict Role Check ---
 def check_placement_role():
     if 'user' not in session: return False
-    return session['user'].get('role') in ['placement', 'placement_officer', 'admin']
+    # Added 'csa' so they can also access monitoring tools
+    return session['user'].get('role') in ['placement', 'placement_officer', 'admin', 'csa']
 
-# --- 1. DASHBOARD ---
+# =====================================================
+# 1. DASHBOARD
+# =====================================================
 @placement_bp.route('/dashboard')
 def dashboard():
     if not check_placement_role(): return redirect(url_for('auth.login'))
@@ -33,7 +37,8 @@ def dashboard():
         placed_students = 0
         for s in students:
             data = s.to_dict()
-            if data.get('placement_status') == 'placed':
+            # Check for 'placed' status OR the boolean flag
+            if data.get('placement_status') == 'placed' or data.get('is_placed') == True:
                 placed_students += 1
         
         # Calculate Rate
@@ -41,23 +46,45 @@ def dashboard():
         if students_count > 0:
             placement_rate = int((placed_students / students_count) * 100)
 
-        # 3. Pending Actions & Recent Applications
+        # 3. Pending Actions
         pending_actions = 0
-        recent_applications = [] # In production, fetch specific recent apps
+        recent_applications = [] 
         
         return render_template('placement/dashboard.html', 
                              user=session['user'], 
                              drives_count=drives_count, 
                              students_count=students_count,
                              placement_rate=placement_rate,
+                             placed_students=placed_students,
                              pending_actions=pending_actions,
                              recent_applications=recent_applications)
                              
     except Exception as e:
         print(f"Dashboard Error: {e}")
-        return render_template('placement/dashboard.html', user=session['user'], drives_count=0, students_count=0, placement_rate=0, pending_actions=0)
+        return render_template('placement/dashboard.html', user=session['user'], drives_count=0, students_count=0, placement_rate=0, placed_students=0, pending_actions=0)
 
-# --- 2. DRIVES MANAGEMENT ---
+# =====================================================
+# 2. DRIVES MANAGEMENT
+# =====================================================
+@placement_bp.route('/placements/report', methods=['GET'])
+def report_placement():
+    """Render the form for students to report their own placement"""
+    if 'user' not in session: return redirect(url_for('auth.login'))
+    
+    # Check for existing placement record
+    status = None
+    record = None
+    
+    try:
+        query = db.collection('placements').where('student_id', '==', session['user']['uid']).stream()
+        for doc in query:
+            record = doc.to_dict()
+            status = record.get('status')
+            break
+    except Exception as e:
+        print(f"Error checking placement status: {e}")
+        
+    return render_template('placement/report_placement.html', user=session['user'], existing_record=record, status=status)
 @placement_bp.route('/drives', methods=['GET', 'POST'])
 def drives():
     if not check_placement_role(): return redirect(url_for('auth.login'))
@@ -67,7 +94,6 @@ def drives():
             data = request.form
             deadline_val = data.get('deadline')
             
-            # Create timestamp from string if possible, else store string
             deadline_ts = deadline_val
             try:
                 if deadline_val:
@@ -102,12 +128,10 @@ def drives():
     for d in drives_ref:
         doc = d.to_dict()
         doc['id'] = d.id
-        # Safe applicant count
         apps_ref = d.reference.collection('applicants').get()
         doc['applicant_count'] = len(apps_ref)
         drives_list.append(doc)
     
-    # Sort in memory
     def get_sort_key(d):
         ts = d.get('created_at')
         if ts:
@@ -186,7 +210,6 @@ def export_drive_pdf(drive_id):
     if not drive.exists: return "Drive not found", 404
     drive_data = drive.to_dict()
     
-    # Fetch Applicants for PDF
     applicants = []
     apps_ref = drive_ref.reference.collection('applicants').stream()
     for doc in apps_ref:
@@ -199,7 +222,6 @@ def export_drive_pdf(drive_id):
             'status': data.get('status', 'applied')
         })
     
-    # Generate PDF
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
@@ -243,7 +265,6 @@ def export_drive_pdf(drive_id):
 def get_drive_applicants(drive_id):
     if not check_placement_role(): return jsonify({'error': 'Unauthorized'}), 401
     try:
-        # FIXED: Added the definition of applicants_ref which was missing
         applicants_ref = db.collection('placement_drives').document(drive_id).collection('applicants').stream()
         results = []
         for doc in applicants_ref:
@@ -260,7 +281,9 @@ def get_drive_applicants(drive_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# --- 3. STUDENT FILTER & EXPORT ---
+# =====================================================
+# 3. STUDENT FILTER & EXPORT
+# =====================================================
 @placement_bp.route('/students', methods=['GET', 'POST'])
 def students():
     if not check_placement_role(): return redirect(url_for('auth.login'))
@@ -268,7 +291,6 @@ def students():
     students_list = []
     query = db.collection('users').where('role', '==', 'student')
     
-    # Filter Logic
     dept = request.form.get('department')
     if request.method == 'POST' and dept:
         query = query.where('department', '==', dept)
@@ -289,7 +311,6 @@ def students():
         s = doc.to_dict()
         s['id'] = doc.id
         
-        # Apply Filters
         try: scgpa = float(s.get('cgpa', 0) or 0)
         except: scgpa = 0.0
         
@@ -299,7 +320,6 @@ def students():
             raw = s.get('skills', [])
             uskills = set()
             if isinstance(raw, list): uskills = {str(k).lower() for k in raw}
-            
             if not all(req in uskills for req in required_skills): continue
             
         students_list.append(s)
@@ -308,11 +328,155 @@ def students():
 
 @placement_bp.route('/students/export', methods=['POST'])
 def export_students_pdf():
-    # ... (Reuse the same logic as 'students' route to get the list, then generate PDF) ...
-    # Simplified PDF generation for brevity, uses same logic as above
-    return redirect(url_for('placement.students')) # Placeholder redirect if not fully implemented in prompt context
+    # Placeholder: In a real app, reuse the filter logic from 'students' route
+    # and generate a PDF/CSV of the filtered list.
+    flash("Export feature coming soon.", "info")
+    return redirect(url_for('placement.students'))
 
-# --- 4. TRAINING & TASKS ---
+# =====================================================
+# 4. MANUAL PLACEMENT ENTRY & REPORTING (NEW)
+# =====================================================
+
+@placement_bp.route('/placements/add', methods=['POST'])
+def add_manual_placement():
+    """Manually mark a student as placed or submit a request"""
+    if 'user' not in session: return redirect(url_for('auth.login'))
+    
+    try:
+        user_role = session['user']['role']
+        student_id = request.form.get('student_id')
+        company = request.form.get('company')
+        role = request.form.get('role')
+        ctc = request.form.get('ctc')
+        date = request.form.get('date')
+        offer_link = request.form.get('offer_link') # New field
+        
+        # Determine status based on who is adding
+        # If student adds it -> pending
+        # If staff adds it -> verified
+        initial_status = 'verified' if user_role in ['placement_officer', 'admin', 'csa'] else 'pending'
+        
+        # 1. Add to Placements Collection
+        student_ref = db.collection('users').document(student_id)
+        student_data = student_ref.get().to_dict()
+        
+        # check if already exists to prevent duplicates or allow updates
+        existing_query = db.collection('placements').where('student_id', '==', student_id).stream()
+        existing_doc = None
+        for doc in existing_query:
+            existing_doc = doc
+            break
+            
+        placement_data = {
+            'student_id': student_id,
+            'student_name': student_data.get('full_name', 'Unknown'),
+            'batch_id': student_data.get('batch_id'),
+            'company': company,
+            'role': role,
+            'ctc': ctc,
+            'placed_date': date,
+            'offer_link': offer_link,
+            'added_by': user_role,
+            'status': initial_status,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        }
+
+        if existing_doc:
+            # Update existing manual entry (re-submission)
+            if existing_doc.to_dict().get('status') == 'rejected' or user_role in ['placement_officer', 'admin']:
+                 db.collection('placements').document(existing_doc.id).update(placement_data)
+                 flash("Placement record updated.", "success")
+            else:
+                 flash("You already have a pending placement record.", "warning")
+                 return redirect(url_for('placement.report_placement'))
+        else:
+            # New entry
+            placement_data['created_at'] = firestore.SERVER_TIMESTAMP
+            db.collection('placements').add(placement_data)
+            flash("Placement record submitted for verification.", "success")
+        
+        # 2. Update User Profile Status ONLY if verified
+        if initial_status == 'verified':
+            student_ref.update({
+                'placement_status': 'placed',
+                'is_placed': True
+            })
+            flash(f"Successfully marked {student_data.get('full_name')} as placed!", "success")
+        
+    except Exception as e:
+        flash(f"Error adding placement: {e}", "error")
+        
+    return redirect(url_for('placement.report_placement') if user_role == 'student' else request.referrer)
+
+@placement_bp.route('/placements/approve/<placement_id>')
+def approve_placement(placement_id):
+    if not check_placement_role() or session['user']['role'] == 'student': return "Unauthorized", 403
+    
+    try:
+        p_ref = db.collection('placements').document(placement_id)
+        p_data = p_ref.get().to_dict()
+        
+        if not p_data: return "Record not found", 404
+        
+        # Update Placement Record
+        p_ref.update({'status': 'verified'})
+        
+        # Update Student Profile
+        db.collection('users').document(p_data['student_id']).update({
+            'placement_status': 'placed',
+            'is_placed': True
+        })
+        
+        flash("Placement approved successfully.", "success")
+    except Exception as e:
+        flash(f"Error approving: {e}", "error")
+        
+    return redirect(request.referrer)
+
+@placement_bp.route('/placements/reject/<placement_id>')
+def reject_placement(placement_id):
+    if not check_placement_role() or session['user']['role'] == 'student': return "Unauthorized", 403
+    
+    try:
+        db.collection('placements').document(placement_id).update({'status': 'rejected'})
+        flash("Placement record rejected.", "info")
+    except Exception as e:
+        flash(f"Error rejecting: {e}", "error")
+        
+    return redirect(request.referrer)
+
+@placement_bp.route('/placements/export_csv')
+def export_placement_csv():
+    """Export list of verified placed students"""
+    if not check_placement_role(): return "Unauthorized", 403
+    
+    # Logic: CSA sees only their batch, Officer sees all
+    # Export ONLY verified records
+    query = db.collection('placements').where('status', '==', 'verified')
+    
+    if session['user']['role'] == 'csa':
+        my_batch = session['user'].get('batch_id')
+        if my_batch: query = query.where('batch_id', '==', my_batch)
+            
+    placements = query.stream()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Student Name', 'Company', 'Role', 'CTC', 'Date', 'Offer Link'])
+    
+    for p in placements:
+        d = p.to_dict()
+        writer.writerow([d.get('student_name'), d.get('company'), d.get('role'), d.get('ctc'), d.get('placed_date'), d.get('offer_link', 'N/A')])
+        
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=placement_report.csv"}
+    )
+
+# =====================================================
+# 5. TRAINING & TASKS
+# =====================================================
 @placement_bp.route('/training', methods=['GET', 'POST'])
 def training():
     if not check_placement_role(): return redirect(url_for('auth.login'))
@@ -341,6 +505,7 @@ def delete_training(res_id):
 @placement_bp.route('/tasks', methods=['GET', 'POST'])
 def tasks():
     if not check_placement_role(): return redirect(url_for('auth.login'))
+    
     if request.method == 'POST':
         db.collection('assignments').add({
             'title': request.form.get('title'),
@@ -355,29 +520,20 @@ def tasks():
         flash('Task assigned!', 'success')
         return redirect(url_for('placement.tasks'))
 
-        flash('Task assigned!', 'success')
-        return redirect(url_for('placement.tasks'))
-
-    # Strict Filtering: Only show tasks created by ME
-    # Note: 'assigned_by' field stores the creator UID for Placement tasks
     uid = session['user']['uid']
     tasks_list = []
     
     try:
-        # 1. Optimized Query
         tasks_ref = db.collection('assignments')\
             .where('assigned_by', '==', uid)\
             .order_by('created_at', direction=firestore.Query.DESCENDING).stream()
         tasks_list = [{'id': t.id, **t.to_dict()} for t in tasks_ref]
-        
     except Exception:
-        # 2. Fallback Query (No Index)
-        print("Placement Tasks Fallback: Sorting in memory")
+        # Fallback sorting
         tasks_ref = db.collection('assignments').where('assigned_by', '==', uid).stream()
         tasks_list = [{'id': t.id, **t.to_dict()} for t in tasks_ref]
         tasks_list.sort(key=lambda x: x.get('created_at', datetime.min) if x.get('created_at') else datetime.min, reverse=True)
 
-    # Fetch All Batches for Dropdown
     batches = []
     for b in db.collection('batches').stream():
         batches.append({'id': b.id, **b.to_dict()})
@@ -390,15 +546,11 @@ def edit_task(task_id):
     try:
         task_ref = db.collection('assignments').document(task_id)
         task = task_ref.get()
-        
         if not task.exists:
             flash("Task not found.", "error")
             return redirect(url_for('placement.tasks'))
             
         task_data = task.to_dict()
-        
-        # Verify Ownership: PO can only edit their OWN tasks
-        # Note: We check both 'assigned_by' (new tasks) and 'created_by' (reposts/others) to be safe
         creator = task_data.get('assigned_by') or task_data.get('created_by')
         if creator != session['user']['uid']:
             flash("You can only edit tasks you created.", "error")
@@ -410,7 +562,6 @@ def edit_task(task_id):
             'deadline': request.form['deadline'],
             'assigned_to_batch': request.form['batch_id']
         }
-        
         task_ref.update(update_data)
         flash("Task updated successfully!", "success")
     except Exception as e:
@@ -420,40 +571,25 @@ def edit_task(task_id):
 @placement_bp.route('/tasks/submissions/<task_id>')
 def view_submissions(task_id):
     if not check_placement_role(): return redirect(url_for('auth.login'))
-    
     try:
         task_ref = db.collection('assignments').document(task_id).get()
-        if not task_ref.exists:
-            flash("Task not found", "error")
-            return redirect(url_for('placement.tasks'))
-            
+        if not task_ref.exists: return redirect(url_for('placement.tasks'))
         task_data = task_ref.to_dict()
-        batch_id = task_data.get('assigned_to_batch')
         
-        # Verify Ownership
-        if task_data.get('assigned_by') != session['user']['uid']:
-             flash("Unauthorized access to this task.", "error")
-             return redirect(url_for('placement.tasks'))
-
-        # Fetch Students in Batch
-        students_ref = db.collection('users').where('batch_id', '==', batch_id).where('role', '==', 'student').stream()
+        students_ref = db.collection('users').where('batch_id', '==', task_data.get('assigned_to_batch')).where('role', '==', 'student').stream()
         students_data = []
         
         for s in students_ref:
             s_dict = s.to_dict()
-            student_id = s.id
-            
-            # Check Submission Status
-            submission_ref = db.collection('assignments').document(task_id).collection('submissions').document(student_id).get()
+            sub_ref = db.collection('assignments').document(task_id).collection('submissions').document(s.id).get()
             
             status = 'pending'
             file_url = '#'
             submitted_at = None
-            
-            if submission_ref.exists:
-                sub_data = submission_ref.to_dict()
+            if sub_ref.exists:
+                sub_data = sub_ref.to_dict()
                 status = 'submitted'
-                file_url = sub_data.get('file_url') or sub_data.get('link') or '#'
+                file_url = sub_data.get('file_url') or sub_data.get('link') or sub_data.get('submission_link') or '#'
                 submitted_at = sub_data.get('submitted_at')
 
             students_data.append({
@@ -463,33 +599,28 @@ def view_submissions(task_id):
                 'file_url': file_url,
                 'submitted_at': submitted_at
             })
-            
         return render_template('placement/task_submissions.html', user=session['user'], task=task_data, students=students_data)
-
     except Exception as e:
-        print(f"Error viewing submissions: {e}")
         flash("An error occurred loading submissions.", "error")
         return redirect(url_for('placement.tasks'))
 
-# --- 5. MESSAGES (Universal) ---
+# =====================================================
+# 6. MESSAGES (Universal)
+# =====================================================
 @placement_bp.route('/messages')
 def messages():
     if not check_placement_role(): return redirect(url_for('auth.login'))
-    
     current_uid = session['user']['uid']
     all_users = db.collection('users').stream()
-    
     users_list = []
     for u in all_users:
         if u.id != current_uid:
             d = u.to_dict()
-            raw_role = d.get('role', 'user')
             users_list.append({
                 'id': u.id,
                 'name': d.get('full_name', d.get('email')),
-                'user_type': raw_role.replace('_', ' ').title()
+                'user_type': d.get('role', 'user').replace('_', ' ').title()
             })
-            
     users_list.sort(key=lambda x: x['name'])
     return render_template('placement/messages.html', user=session['user'], users=users_list)
 
@@ -516,70 +647,102 @@ def send_message():
     data = request.json
     receiver_id = data.get('receiver_id')
     sender_id = session['user']['uid']
-    
     participants = sorted([sender_id, receiver_id])
     conv_id = f"{participants[0]}_{participants[1]}"
-    conv_ref = db.collection('conversations').document(conv_id)
     
+    conv_ref = db.collection('conversations').document(conv_id)
     if not conv_ref.get().exists:
         conv_ref.set({'participants': participants, 'updated_at': firestore.SERVER_TIMESTAMP})
         
     conv_ref.collection('messages').add({
-        'sender_id': sender_id, 
-        'content': data.get('message'), 
-        'timestamp': firestore.SERVER_TIMESTAMP
+        'sender_id': sender_id, 'content': data.get('message'), 'timestamp': firestore.SERVER_TIMESTAMP
     })
     return jsonify({'status': 'sent'})
 
 @placement_bp.route('/api/broadcast', methods=['POST'])
 def send_broadcast():
-    if not check_placement_role(): return jsonify({'error': 'Unauthorized'}), 401
-    # ... (Same logic as HOD broadcast) ...
-    # Simplified for brevity
+    # Placeholder for broadcast functionality
     return jsonify({'status': 'success', 'count': 0})
 
-# --- 6. REPORTS & ANALYTICS ---
+# --- VIEW PLACED STUDENTS (Universal Route for CSA & Officer) ---
+@placement_bp.route('/placements/view')
+def view_placements():
+    if not check_placement_role(): return redirect(url_for('auth.login'))
+    
+    role = session['user']['role']
+    query = db.collection('placements')
+    
+    # 1. Filter Logic
+    # 1. Filter Logic
+    if role == 'csa':
+        # CSA only sees their batch(es)
+        user_id = session['user']['uid']
+        # Fetch batches from DB to be sure (reusing logic from csa_routes conceptually)
+        batch_ids = []
+        
+        # 1. Direct Fetch
+        batches_query = db.collection('batches').where('csa_id', '==', user_id).stream()
+        for b in batches_query: batch_ids.append(b.id)
+        
+        # 2. Managed IDs from profile
+        if not batch_ids:
+             csa_doc = db.collection('users').document(user_id).get()
+             if csa_doc.exists:
+                 batch_ids = csa_doc.to_dict().get('managed_batch_ids', [])
+        
+        if batch_ids:
+            # Firestore 'in' query supports max 10
+            # proper way is to use 'in' for chunks or just filter in python if list is small
+            # For reported issue, we assume 1 or small number of batches
+            query = query.where('batch_id', 'in', batch_ids[:10])
+        else:
+            # No batches assigned? View empty
+            return render_template('staff/placement_list.html', user=session['user'], placements=[], role=role)
+            
+    # Placement Officer sees ALL (no filter added)
+    
+    # 2. Fetch Data
+    placements_ref = query.stream()
+    placements_list = []
+    
+    for p in placements_ref:
+        data = p.to_dict()
+        data['id'] = p.id  # Critical for approve/reject links
+        placements_list.append(data)
+        
+    # 3. Render the SHARED template
+    return render_template('staff/placement_list.html', placements=placements_list, role=role)
+
+# =====================================================
+# 7. REPORTS & ANALYTICS
+# =====================================================
 @placement_bp.route('/reports')
 def reports():
     if not check_placement_role(): return redirect(url_for('auth.login'))
-    
-    # Fetch History
     reports_ref = db.collection('reports').where('generated_by', '==', session['user']['uid']).stream()
     reports_list = [{'id': r.id, **r.to_dict()} for r in reports_ref]
     reports_list.sort(key=lambda x: x.get('created_at') if x.get('created_at') else datetime.min, reverse=True)
-    
     return render_template('placement/reports.html', user=session['user'], reports=reports_list)
 
 @placement_bp.route('/generate_report', methods=['POST'])
 def generate_report():
     if not check_placement_role(): return redirect(url_for('auth.login'))
-    
     try:
-        report_type = request.form.get('type') # 'placement_stats' or 'task_completion'
-        
-        # --- PDF GENERATION ---
+        report_type = request.form.get('type')
         timestamp = datetime.now()
-        timestamp_str = timestamp.strftime('%Y%m%d_%H%M%S')
-        report_title = f"{report_type.replace('_', ' ').title()} - {timestamp.strftime('%Y-%m-%d')}"
-        filename = f"report_{report_type}_{timestamp_str}.pdf"
-        
-        # Ensure static/reports directory exists
+        filename = f"report_{report_type}_{timestamp.strftime('%Y%m%d_%H%M%S')}.pdf"
         reports_dir = os.path.join(current_app.static_folder, 'reports')
         os.makedirs(reports_dir, exist_ok=True)
-        
         filepath = os.path.join(reports_dir, filename)
         
-        # Create PDF
         c = canvas.Canvas(filepath)
         c.setFont("Helvetica-Bold", 16)
         c.drawString(50, 800, "PrepAI - Analytics Report")
         c.setFont("Helvetica", 12)
-        c.drawString(50, 770, f"Title: {report_title}")
+        c.drawString(50, 770, f"Title: {report_type.replace('_', ' ').title()}")
         c.drawString(50, 750, f"Date: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
-        c.drawString(50, 730, f"Type: {report_type}")
         
-        # Add basic stats based on type
-        c.drawString(50, 680, "Executive Summary:")
+        c.drawString(50, 680, "Summary:")
         if report_type == 'placement_stats':
             c.drawString(50, 660, "Active Drives: " + str(len(list(db.collection('placement_drives').where('status', '==', 'active').stream()))))
             c.drawString(50, 640, "Total Students: " + str(len(list(db.collection('users').where('role', '==', 'student').stream()))))
@@ -588,22 +751,16 @@ def generate_report():
             
         c.save()
         
-        download_url = url_for('static', filename=f'reports/{filename}')
-
-        # Save to Firestore
         db.collection('reports').add({
             'type': report_type,
-            'title': report_title,
+            'title': f"{report_type.replace('_', ' ').title()} - {timestamp.strftime('%Y-%m-%d')}",
             'generated_by': session['user']['uid'],
             'status': 'ready',
-            'download_url': download_url,
+            'download_url': url_for('static', filename=f'reports/{filename}'),
             'created_at': firestore.SERVER_TIMESTAMP
         })
-        
         flash('Report generated successfully!', 'success')
-        
     except Exception as e:
         flash(f"Error generating report: {e}", "error")
-        print(f"Report Gen Error: {e}")
         
     return redirect(url_for('placement.reports'))

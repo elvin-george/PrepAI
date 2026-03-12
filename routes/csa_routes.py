@@ -546,7 +546,7 @@ def view_submissions(task_id):
             if submission_ref.exists:
                 sub_data = submission_ref.to_dict()
                 status = 'submitted'
-                file_url = sub_data.get('file_url') or sub_data.get('link') or '#'
+                file_url = sub_data.get('file_url') or sub_data.get('link') or sub_data.get('submission_link') or '#'
                 submitted_at = sub_data.get('submitted_at')
 
             students_data.append({

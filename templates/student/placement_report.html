@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-briefcase text-2xl text-green-600"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">I Got Placed!</h1>
+        <p class="text-gray-500">Share your success details with the college.</p>
+    </div>
+
+    <form action="{{ url_for('placement.report_placement') }}" method="POST" class="space-y-6">
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Company Name</label>
+            <input type="text" name="company" required placeholder="e.g. Google, TCS" 
+                   class="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Designation / Role</label>
+                <input type="text" name="role" required placeholder="e.g. SDE Intern" 
+                       class="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">CTC (in LPA)</label>
+                <input type="number" step="0.1" name="ctc" required placeholder="e.g. 12.5" 
+                       class="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Date of Offer</label>
+            <input type="date" name="date" required 
+                   class="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+        </div>
+
+        <button type="submit" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg shadow-green-500/30 transition-all">
+            Submit Placement Details
+        </button>
+    </form>
+</div>
+{% endblock %}

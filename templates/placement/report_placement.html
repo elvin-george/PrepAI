@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center p-6">
+
+    <div
+        class="max-w-xl w-full bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-brand-600 to-purple-600 p-8 text-center text-white relative overflow-hidden">
+            <div class="relative z-10">
+                <div
+                    class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                    <i class="fas fa-trophy text-3xl text-yellow-300"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold tracking-tight">I Got Placed!</h2>
+
+                {% if status == 'verified' %}
+                <span
+                    class="inline-block mt-3 px-4 py-1 bg-green-500 text-white text-xs font-bold rounded-full uppercase tracking-wider shadow-lg">
+                    <i class="fas fa-check-circle mr-1"></i> Verified & Approved
+                </span>
+                {% elif status == 'pending' %}
+                <span
+                    class="inline-block mt-3 px-4 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full uppercase tracking-wider shadow-lg">
+                    <i class="fas fa-clock mr-1"></i> Waiting for Approval
+                </span>
+                {% elif status == 'rejected' %}
+                <span
+                    class="inline-block mt-3 px-4 py-1 bg-red-500 text-white text-xs font-bold rounded-full uppercase tracking-wider shadow-lg">
+                    <i class="fas fa-times-circle mr-1"></i> Action Required
+                </span>
+                {% else %}
+                <p class="text-purple-100 mt-2 font-medium">Congratulations! Share your success with us.</p>
+                {% endif %}
+            </div>
+
+            <!-- Confetti decoration -->
+            <div class="absolute top-0 left-0 w-full h-full opacity-20"
+                style="background-image: url('data:image/svg+xml;base64,PHN2ZyB...');"></div>
+        </div>
+
+        {% if status == 'rejected' %}
+        <div class="bg-red-50 dark:bg-red-900/20 p-4 border-b border-red-100 dark:border-red-900/50">
+            <div class="flex gap-3">
+                <i class="fas fa-exclamation-circle text-red-600 mt-1"></i>
+                <div>
+                    <p class="font-bold text-red-700 dark:text-red-400">Submission Returned</p>
+                    <p class="text-xs text-red-600 dark:text-red-300">Your placement record was not approved. Please
+                        check your details and offer letter link, then resubmit.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Form -->
+        <form action="{{ url_for('placement.add_manual_placement') }}" method="POST" class="p-8 space-y-6">
+
+            <input type="hidden" name="student_id" value="{{ user.uid }}">
+
+            <!-- Read-only mode if verified or pending -->
+            {% set is_readonly = (status == 'verified' or status == 'pending') %}
+
+            <!-- Company Name -->
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Company Name</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-building text-gray-400"></i>
+                    </div>
+                    <input type="text" name="company" required
+                        value="{{ existing_record.company if existing_record else '' }}" {% if is_readonly %}readonly{%
+                        endif %} class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white transition-all
+                           {% if is_readonly %}bg-gray-100 dark:bg-gray-600 cursor-not-allowed{% endif %}"
+                        placeholder="e.g. Google, Microsoft, Infosys">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Role -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Job Role</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-briefcase text-gray-400"></i>
+                        </div>
+                        <input type="text" name="role" required
+                            value="{{ existing_record.role if existing_record else '' }}" {% if is_readonly %}readonly{%
+                            endif %} class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white transition-all
+                               {% if is_readonly %}bg-gray-100 dark:bg-gray-600 cursor-not-allowed{% endif %}"
+                            placeholder="e.g. Software Engineer">
+                    </div>
+                </div>
+
+                <!-- CTC -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">CTC (LPA)</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-rupee-sign text-gray-400"></i>
+                        </div>
+                        <input type="number" step="0.1" name="ctc" required
+                            value="{{ existing_record.ctc if existing_record else '' }}" {% if is_readonly %}readonly{%
+                            endif %} class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white transition-all
+                               {% if is_readonly %}bg-gray-100 dark:bg-gray-600 cursor-not-allowed{% endif %}"
+                            placeholder="e.g. 12.5">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Link -->
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Offer Letter Link
+                    (Proof)</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-link text-gray-400"></i>
+                    </div>
+                    <input type="url" name="offer_link" required
+                        value="{{ existing_record.offer_link if existing_record else '' }}" {% if is_readonly
+                        %}readonly{% endif %} class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white transition-all
+                           {% if is_readonly %}bg-gray-100 dark:bg-gray-600 cursor-not-allowed{% endif %}"
+                        placeholder="https://drive.google.com/file/...">
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Please ensure the link is publicly accessible or shared with
+                    staff.</p>
+            </div>
+
+            <!-- Date -->
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Offer Date</label>
+                <input type="date" name="date" required
+                    value="{{ existing_record.placed_date if existing_record else '' }}" {% if is_readonly %}readonly{%
+                    endif %} class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white transition-all
+                       {% if is_readonly %}bg-gray-100 dark:bg-gray-600 cursor-not-allowed{% endif %}">
+            </div>
+
+            {% if not is_readonly %}
+            <!-- Submit Button -->
+            <button type="submit"
+                class="w-full py-4 bg-gray-900 hover:bg-black dark:bg-white dark:text-gray-900 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2">
+                <span>{{ 'Resubmit Details' if status == 'rejected' else 'Submit Details' }}</span>
+                <i class="fas fa-paper-plane"></i>
+            </button>
+            {% else %}
+            <button type="button" disabled
+                class="w-full py-4 bg-gray-100 dark:bg-gray-700 text-gray-400 font-bold rounded-xl cursor-not-allowed border-2 border-dashed border-gray-200 dark:border-gray-600">
+                Submission Locked ({{ status|title }})
+            </button>
+            {% endif %}
+
+            <div class="text-center">
+                <a href="{{ url_for('student.dashboard') }}"
+                    class="text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white">Back to
+                    Dashboard</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

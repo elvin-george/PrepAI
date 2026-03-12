@@ -20,14 +20,23 @@
                     stats.pending }} pending tasks</span>.
             </p>
         </div>
-        <div
-            class="flex items-center gap-3 px-5 py-2.5 bg-white dark:bg-gray-800 rounded-full shadow-sm border border-gray-100 dark:border-gray-700 animate-fade-in-up">
-            <span class="relative flex h-3 w-3">
-                <span
-                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-            </span>
-            <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">System Live: AI Modules Active</span>
+        <div class="flex items-center gap-3 animate-fade-in-up">
+
+            <!-- NEW: I Got Placed Button -->
+            <a href="{{ url_for('placement.report_placement') }}"
+                class="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold rounded-full shadow-lg hover:shadow-orange-500/30 hover:-translate-y-0.5 transition-all text-sm">
+                <i class="fas fa-trophy"></i> I Got Placed!
+            </a>
+
+            <div
+                class="flex items-center gap-3 px-5 py-2.5 bg-white dark:bg-gray-800 rounded-full shadow-sm border border-gray-100 dark:border-gray-700">
+                <span class="relative flex h-3 w-3">
+                    <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">System Live</span>
+            </div>
         </div>
     </div>
 
