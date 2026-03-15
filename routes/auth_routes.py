@@ -77,6 +77,12 @@ def login():
             user_data = user_doc.to_dict()
             role = user_data.get('role', 'student')
             full_name = user_data.get('full_name', email.split('@')[0])
+            
+            if role == 'student':
+                try:
+                    user_ref.update({'last_active': firestore.SERVER_TIMESTAMP})
+                except Exception as e:
+                    print(f"Error updating last_active: {e}")
         else:
             full_name = email.split('@')[0]
 

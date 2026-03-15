@@ -7,6 +7,7 @@ import requests
 import json
 import io
 from pypdf import PdfReader  # Make sure to run: pip install pypdf
+from utils.resume_analyzer import analyze_resume_custom
 
 student_bp = Blueprint('student', __name__)
 db = firestore.client()
@@ -487,6 +488,9 @@ def resume_analysis():
 
 @student_bp.route('/api/analyze_resume', methods=['POST'])
 def api_analyze_resume():
+    if not check_student_role(): 
+        return jsonify({"error": "Unauthorized"}), 403
+
     if 'resume' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
     
@@ -495,38 +499,18 @@ def api_analyze_resume():
         return jsonify({"error": "No file selected"}), 400
 
     try:
-        # 1. Read PDF in Memory
+        # 1. Read PDF from memory (No database storage required)
         pdf_reader = PdfReader(io.BytesIO(file.read()))
         resume_text = ""
         for page in pdf_reader.pages:
             resume_text += page.extract_text() + "\n"
             
-        # 2. Send to Gemini
-        prompt = f"""
-        Act as a strict HR manager. Analyze this resume text for a Software Engineer role.
-        Resume Text:
-        {resume_text[:4000]}
+        # 2. Pass the extracted text to our custom ML Algorithm
+        analysis_result = analyze_resume_custom(resume_text)
         
-        Output strict JSON:
-        {{
-            "score": 75,
-            "summary": "One sentence summary.",
-            "strengths": ["Strength 1", "Strength 2"],
-            "weaknesses": ["Weakness 1", "Weakness 2"],
-            "suggestions": ["Tip 1", "Tip 2"]
-        }}
-        """
-        
-        
-        response = call_gemini_api(prompt)
-        if not response:
-            return jsonify({"error": "AI Service unavailable."}), 503
-
-        cleaned_response = response.replace('```json', '').replace('```', '').strip()
-        analysis = json.loads(cleaned_response)
-        
-        return jsonify(analysis)
+        # 3. Return the JSON structure the frontend expects
+        return jsonify(analysis_result)
         
     except Exception as e:
-        print(e)
-        return jsonify({"error": "Could not analyze PDF. Ensure it is text-based."}), 500
+        print(f"PDF Analysis Error: {e}")
+        return jsonify({"error": "Could not analyze PDF. Ensure it is a valid text-based PDF."}), 500
